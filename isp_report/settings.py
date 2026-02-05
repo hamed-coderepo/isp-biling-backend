@@ -2,7 +2,9 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env only for local development (Cloud Run sets K_SERVICE)
+if not os.getenv('K_SERVICE'):
+    load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
