@@ -139,6 +139,10 @@ def report_view(request):
             tables_priority = ['Huser_servicebase']
         limit = 0
         use_bq = os.getenv('REPORT_SOURCE', 'mariadb').lower() == 'bigquery'
+        bq_creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '').strip()
+        if use_bq and bq_creds_path and not os.path.exists(bq_creds_path):
+            use_bq = False
+            request.session['error'] = 'BigQuery credentials not configured. Falling back to MariaDB.'
 
         def _safe_filename(value):
             if value is None:
