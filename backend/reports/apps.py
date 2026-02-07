@@ -22,7 +22,14 @@ class ReportsConfig(AppConfig):
         from .sync import sync_maria_to_bigquery
 
         interval = int(os.getenv('AUTO_SYNC_INTERVAL_MINUTES', '30'))
+        days = int(os.getenv('AUTO_SYNC_DAYS', '90'))
         scheduler = BackgroundScheduler()
-        scheduler.add_job(sync_maria_to_bigquery, 'interval', minutes=interval, id='maria_to_bq')
+        scheduler.add_job(
+            sync_maria_to_bigquery,
+            'interval',
+            minutes=interval,
+            id='maria_to_bq',
+            kwargs={'days': days},
+        )
         scheduler.start()
         atexit.register(lambda: scheduler.shutdown(wait=False))

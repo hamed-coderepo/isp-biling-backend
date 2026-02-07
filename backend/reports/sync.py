@@ -1,7 +1,9 @@
 import os
+import json
 import logging
 import tempfile
 import uuid
+from datetime import datetime, timezone
 from google.cloud import bigquery
 import pandas as pd
 import pymysql
@@ -9,6 +11,48 @@ import pymysql
 from pymysql.cursors import DictCursor
 
 logger = logging.getLogger(__name__)
+LOG_PATH = os.getenv('SYNC_LOG_PATH') or os.path.join(os.path.dirname(__file__), 'sync_logs.jsonl')
+
+
+def _write_sync_log(entry):
+    log_dir = os.path.dirname(LOG_PATH)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+    with open(LOG_PATH, 'a', encoding='utf-8') as handle:
+        handle.write(json.dumps(entry, ensure_ascii=True) + '\n')
+
+
+def log_sync_event(event_type, message, **data):
+    entry = {
+        'ts': datetime.now(timezone.utc).isoformat(),
+        'type': event_type,
+        'message': message,
+        'data': data,
+    }
+    try:
+        _write_sync_log(entry)
+    except Exception:
+        logger.exception('Sync: failed to write log event')
+
+
+def read_sync_logs(limit=200):
+    if limit <= 0:
+        return []
+    if not os.path.exists(LOG_PATH):
+        return []
+    with open(LOG_PATH, 'r', encoding='utf-8') as handle:
+        lines = handle.readlines()
+    tail = lines[-limit:]
+    entries = []
+    for line in tail:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            entries.append({'ts': None, 'type': 'raw', 'message': line, 'data': {}})
+    return entries
 
 
 def _parse_sources():
@@ -45,7 +89,7 @@ def _parse_sources():
     }]
 
 
-def _fetch_maria_rows(source, limit=0):
+def _fetch_maria_rows(source, limit=0, days=None):
     logger.info("Sync: fetching rows from %s (%s:%s/%s)", source.get('name'), source.get('host'), source.get('port'), source.get('db'))
     query = """
 SELECT
@@ -58,8 +102,8 @@ SELECT
     Hse.ServiceName AS ServiceName,
     TName.ServicePrice AS ServicePrice,
     CASE
-        WHEN Hse.STrA IS NULL THEN NULL
-        ELSE ROUND(Hse.STrA / 1073741824, 2)
+        WHEN COALESCE(NULLIF(Hse.STrA, 0), NULLIF(Hse.MTrA, 0), NULLIF(Hse.DTrA, 0), NULLIF(Hse.YTrA, 0), NULLIF(Hse.ExtraTraffic, 0)) IS NULL THEN NULL
+        ELSE ROUND(COALESCE(NULLIF(Hse.STrA, 0), NULLIF(Hse.MTrA, 0), NULLIF(Hse.DTrA, 0), NULLIF(Hse.YTrA, 0), NULLIF(Hse.ExtraTraffic, 0)) / 1073741824, 2)
     END AS Package,
     TName.ServiceStatus AS ServiceStatus,
     DATE_FORMAT(NULLIF(TName.StartDate, '0000-00-00'), '%Y-%m-%d') AS StartDate,
@@ -68,8 +112,21 @@ FROM Huser_servicebase TName
 JOIN Huser Hu ON TName.User_Id = Hu.User_Id
 LEFT JOIN Hreseller Hrc ON TName.Creator_Id = Hrc.Reseller_Id
 LEFT JOIN Hservice Hse ON TName.Service_Id = Hse.Service_Id
-ORDER BY TName.CDT DESC
 """
+
+    filters = []
+    if days is not None:
+        try:
+            days_val = int(days)
+        except (TypeError, ValueError):
+            days_val = 0
+        if days_val > 0:
+            filters.append(f"TName.CDT >= DATE_SUB(CURDATE(), INTERVAL {days_val} DAY)")
+
+    if filters:
+        query += "\nWHERE " + " AND ".join(filters)
+
+    query += "\nORDER BY TName.CDT DESC"
     if limit and limit > 0:
         query += f"\nLIMIT {int(limit)}"
 
@@ -115,7 +172,7 @@ ORDER BY TName.CDT DESC
         conn.close()
 
 
-def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE'):
+def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE', days=None):
     project = os.getenv('BQ_PROJECT')
     dataset = os.getenv('BQ_DATASET')
     table = os.getenv('BQ_TABLE')
@@ -126,18 +183,48 @@ def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE'):
     table_id = f"{project}.{dataset}.{table}"
 
     sources = _parse_sources()
+    source_names = [s.get('name') for s in sources]
     logger.info("Sync: starting BigQuery load to %s", table_id)
+    log_sync_event(
+        'sync_start',
+        'Starting BigQuery sync',
+        table_id=table_id,
+        sources=source_names,
+        limit=limit,
+        days=days,
+        write_disposition=write_disposition,
+    )
     all_dfs = []
     for source in sources:
         try:
-            df = _fetch_maria_rows(source, limit=limit)
+            log_sync_event(
+                'source_start',
+                'Fetching rows from source',
+                source=source.get('name'),
+                host=source.get('host'),
+                db=source.get('db'),
+            )
+            df = _fetch_maria_rows(source, limit=limit, days=days)
+            log_sync_event(
+                'source_success',
+                'Fetched rows from source',
+                source=source.get('name'),
+                rows=len(df),
+            )
             if not df.empty:
                 all_dfs.append(df)
-        except Exception:
+        except Exception as exc:
             logger.exception("Sync: source failed: %s", source.get('name'))
+            log_sync_event(
+                'source_error',
+                'Source fetch failed',
+                source=source.get('name'),
+                error=str(exc),
+            )
 
     if not all_dfs:
         logger.warning("Sync: no data fetched from any source")
+        log_sync_event('sync_no_data', 'No data fetched from any source')
         return 0
 
     df = pd.concat(all_dfs, ignore_index=True)
@@ -179,18 +266,22 @@ def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE'):
         source_format=bigquery.SourceFormat.CSV,
     )
 
-    with tempfile.NamedTemporaryFile(mode='w+', suffix='.csv', delete=False, encoding='utf-8') as tmp:
-        df.to_csv(tmp.name, index=False)
-        tmp.flush()
-        tmp.seek(0)
-        with open(tmp.name, 'rb') as fh:
-            load_job = client.load_table_from_file(
-                fh,
-                table_id,
-                job_config=job_config,
-                location=location,
-            )
-            load_job.result()
-            logger.info("Sync: loaded %s rows into %s", len(df), table_id)
-
-    return len(df)
+    try:
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.csv', delete=False, encoding='utf-8') as tmp:
+            df.to_csv(tmp.name, index=False)
+            tmp.flush()
+            tmp.seek(0)
+            with open(tmp.name, 'rb') as fh:
+                load_job = client.load_table_from_file(
+                    fh,
+                    table_id,
+                    job_config=job_config,
+                    location=location,
+                )
+                load_job.result()
+                logger.info("Sync: loaded %s rows into %s", len(df), table_id)
+        log_sync_event('sync_loaded', 'Loaded rows into BigQuery', rows=len(df), table_id=table_id)
+        return len(df)
+    except Exception as exc:
+        log_sync_event('sync_error', 'BigQuery load failed', table_id=table_id, error=str(exc))
+        raise

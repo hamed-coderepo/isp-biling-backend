@@ -1,15 +1,20 @@
 import os
+import io
+import re
 import datetime
 import pandas as pd
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.contrib.auth import logout
+from django.http import HttpResponse, HttpResponseForbidden
+from django.shortcuts import redirect
 from .forms import FilterForm
 from .models import ResellerProfile
 from fpdf import FPDF
 
 from .db import run_query
 from .bq import run_bq_report_query
+from .sync import read_sync_logs, sync_maria_to_bigquery
 
 
 def safe_text(text):
@@ -17,6 +22,19 @@ def safe_text(text):
         return str(text).encode('latin-1', 'ignore').decode('latin-1')
     except Exception:
         return ''
+
+
+def _truncate_text(pdf, text, width):
+    if pdf.get_string_width(text) <= width - 2:
+        return text
+    ellipsis = '...'
+    max_w = max(0, width - pdf.get_string_width(ellipsis) - 2)
+    trimmed = ''
+    for ch in text:
+        if pdf.get_string_width(trimmed + ch) > max_w:
+            break
+        trimmed += ch
+    return trimmed + ellipsis
 
 
 class PDF(FPDF):
@@ -91,8 +109,185 @@ def export_df_to_pdf(df):
     return pdf.output(dest='S').encode('latin1')
 
 
+def logout_view(request):
+    if request.method not in {'GET', 'POST'}:
+        return HttpResponseForbidden()
+    logout(request)
+    return redirect('reports:login')
+
+
+def _summary_rows_to_df(rows, grand_total, grand_count):
+    if not rows:
+        return pd.DataFrame(columns=['Creator', 'ServiceName', 'SumGB', 'Count'])
+
+    pdf_rows = []
+    for row in rows:
+        for item in row['Details']:
+            pdf_rows.append({
+                'Creator': row['Creator'],
+                'ServiceName': item['ServiceName'],
+                'SumGB': item['SumGB'],
+                'Count': item['Count']
+            })
+        pdf_rows.append({
+            'Creator': f"{row['Creator']} Total",
+            'ServiceName': '',
+            'SumGB': row['TotalGB'],
+            'Count': row['TotalCount']
+        })
+    pdf_rows.append({
+        'Creator': 'Grand Total',
+        'ServiceName': '',
+        'SumGB': grand_total,
+        'Count': grand_count
+    })
+    return pd.DataFrame(pdf_rows)
+
+
+def export_summary_tables_to_pdf(limited_df, unlimited_df):
+    pdf = PDF(orientation='L')
+    pdf.set_auto_page_break(auto=True, margin=8)
+    pdf.add_page()
+    try:
+        pdf.set_font("Arial", size=8)
+    except Exception:
+        pdf.set_font("helvetica", size=8)
+
+    line_height = 6
+    min_width = 18
+    max_width = 80
+    left_x = pdf.l_margin
+    table_width = pdf.w - pdf.l_margin - pdf.r_margin
+
+    def _safe_str(value):
+        if value is None:
+            return ""
+        return safe_text(value)
+
+    def _calc_widths(df, cols):
+        col_widths = []
+        for c in cols:
+            values = df[c].astype(str).fillna('') if c in df.columns else pd.Series([], dtype=str)
+            sample = list(values.head(200))
+            max_text = max([c] + sample, key=lambda s: pdf.get_string_width(str(s)))
+            w = pdf.get_string_width(str(max_text)) + 6
+            col_widths.append(max(min_width, min(max_width, w)))
+        total = sum(col_widths)
+        if total > table_width:
+            scale = table_width / total
+            col_widths = [max(min_width, w * scale) for w in col_widths]
+        return col_widths
+
+    def _render_table(df, title, start_y):
+        pdf.set_xy(left_x, start_y)
+        pdf.set_font(pdf.font_family, size=9)
+        pdf.cell(table_width, line_height, _safe_str(title), border=0)
+        pdf.ln(line_height + 1)
+
+        if df.empty:
+            pdf.set_x(left_x)
+            pdf.cell(table_width, line_height, "No data", border=1, align='C')
+            pdf.ln(line_height + 2)
+            return pdf.get_y()
+
+        cols = ['Creator', 'ServiceName', 'SumGB', 'Count']
+        col_widths = _calc_widths(df, cols)
+        pdf.set_fill_color(255, 255, 255)
+        for i, c in enumerate(cols):
+            header_text = _truncate_text(pdf, _safe_str(c), col_widths[i])
+            pdf.cell(col_widths[i], line_height, header_text, border=1, align='C', fill=True)
+        pdf.ln(line_height)
+
+        for _, row in df.iterrows():
+            for i, c in enumerate(cols):
+                cell_text = _truncate_text(pdf, _safe_str(row.get(c, '')), col_widths[i])
+                pdf.cell(col_widths[i], line_height, cell_text, border=1)
+            pdf.ln(line_height)
+
+        pdf.ln(4)
+        return pdf.get_y()
+
+    y = pdf.t_margin
+    y = _render_table(limited_df, 'Limited Packages Summary', y)
+    _render_table(unlimited_df, 'Unlimited Packages Summary', y)
+
+    return pdf.output(dest='S').encode('latin1')
+
+
+def export_detail_tables_to_pdf(limited_df, unlimited_df):
+    pdf = PDF(orientation='L')
+    pdf.set_auto_page_break(auto=True, margin=8)
+    pdf.add_page()
+    try:
+        pdf.set_font("Arial", size=8)
+    except Exception:
+        pdf.set_font("helvetica", size=8)
+
+    line_height = 6
+    min_width = 18
+    max_width = 80
+    left_x = pdf.l_margin
+    table_width = pdf.w - pdf.l_margin - pdf.r_margin
+
+    def _safe_str(value):
+        if value is None:
+            return ""
+        return safe_text(value)
+
+    def _calc_widths(df, cols):
+        col_widths = []
+        for c in cols:
+            values = df[c].astype(str).fillna('') if c in df.columns else pd.Series([], dtype=str)
+            sample = list(values.head(200))
+            max_text = max([c] + sample, key=lambda s: pdf.get_string_width(str(s)))
+            w = pdf.get_string_width(str(max_text)) + 6
+            col_widths.append(max(min_width, min(max_width, w)))
+        total = sum(col_widths)
+        if total > table_width:
+            scale = table_width / total
+            col_widths = [max(min_width, w * scale) for w in col_widths]
+        return col_widths
+
+    def _render_table(df, title, start_y):
+        pdf.set_xy(left_x, start_y)
+        pdf.set_font(pdf.font_family, size=9)
+        pdf.cell(table_width, line_height, _safe_str(title), border=0)
+        pdf.ln(line_height + 1)
+
+        if df.empty:
+            pdf.set_x(left_x)
+            pdf.cell(table_width, line_height, "No data", border=1, align='C')
+            pdf.ln(line_height + 2)
+            return pdf.get_y()
+
+        cols = list(df.columns)
+        col_widths = _calc_widths(df, cols)
+        pdf.set_fill_color(255, 255, 255)
+        for i, c in enumerate(cols):
+            header_text = _truncate_text(pdf, _safe_str(c), col_widths[i])
+            pdf.cell(col_widths[i], line_height, header_text, border=1, align='C', fill=True)
+        pdf.ln(line_height)
+
+        for _, row in df.iterrows():
+            for i, c in enumerate(cols):
+                cell_text = _truncate_text(pdf, _safe_str(row.get(c, '')), col_widths[i])
+                pdf.cell(col_widths[i], line_height, cell_text, border=1)
+            pdf.ln(line_height)
+
+        pdf.ln(4)
+        return pdf.get_y()
+
+    y = pdf.t_margin
+    y = _render_table(limited_df, 'Limited Packages Report', y)
+    _render_table(unlimited_df, 'Unlimited Packages Report', y)
+
+    return pdf.output(dest='S').encode('latin1')
+
+
 @login_required
 def report_view(request):
+    if request.method == 'GET':
+        request.session.pop('report_filters', None)
     form = FilterForm(request.POST or None)
     final_df = pd.DataFrame()
     info_tables = []
@@ -101,6 +296,9 @@ def report_view(request):
     summary_rows = []
     summary_grand_total = None
     summary_grand_count = None
+    unlimited_summary_rows = []
+    unlimited_grand_total = None
+    unlimited_grand_count = None
 
     # determine allowed creators for this user
     if hasattr(request.user, 'resellerprofile'):
@@ -181,8 +379,9 @@ def report_view(request):
             date_value = _date_str(filters.get('date_value'))
             date_start = _date_str(filters.get('date_start'))
             date_end = _date_str(filters.get('date_end'))
-            if date_op == 'EXACT' and date_value:
-                parts.append(f"date-{_safe_filename(date_value)}")
+            if date_op in {'EXACT', '=', '>', '<', '>=', '<='} and date_value:
+                op_map = {'EXACT': 'eq', '=': 'eq', '>': 'gt', '<': 'lt', '>=': 'gte', '<=': 'lte'}
+                parts.append(f"date-{op_map.get(date_op, 'eq')}-{_safe_filename(date_value)}")
             elif date_op == 'BETWEEN' and date_start and date_end:
                 parts.append(f"date-{_safe_filename(date_start)}-to-{_safe_filename(date_end)}")
 
@@ -194,8 +393,8 @@ def report_view(request):
                 pass
             elif serial_op == 'BETWEEN' and serial_min is not None and serial_max is not None:
                 parts.append(f"serial-{serial_min}-to-{serial_max}")
-            elif serial_op in {'=', '>', '<'} and serial_value is not None:
-                op_map = {'=': 'eq', '>': 'gt', '<': 'lt'}
+            elif serial_op in {'=', '>', '<', '>=', '<='} and serial_value is not None:
+                op_map = {'=': 'eq', '>': 'gt', '<': 'lt', '>=': 'gte', '<=': 'lte'}
                 parts.append(f"serial-{op_map.get(serial_op, 'eq')}-{serial_value}")
 
             name = 'report-' + '-'.join([p for p in parts if p])
@@ -218,6 +417,76 @@ def report_view(request):
                 return value.isoformat()
             return str(value)
 
+        def _build_summary_rows(source_df, creator_col):
+            if source_df.empty or not creator_col or 'ServiceName' not in source_df.columns:
+                return [], None, None
+
+            df = source_df.copy()
+            if 'Package' not in df.columns and 'PackageValue' in df.columns:
+                df['Package'] = df['PackageValue']
+            if 'Package' not in df.columns:
+                return [], None, None
+
+            df['Package'] = pd.to_numeric(df['Package'], errors='coerce')
+            summary = (
+                df.groupby([creator_col, 'ServiceName'])
+                .agg(Count=('ServiceName', 'size'), SumGB=('Package', 'sum'))
+                .reset_index()
+            )
+
+            creator_rows = []
+            for creator in summary[creator_col].unique():
+                df_c = summary[summary[creator_col] == creator]
+                total_gb = df_c['SumGB'].astype(float).sum()
+                total_count = int(df_c['Count'].sum())
+                details = [
+                    {
+                        'ServiceName': row['ServiceName'],
+                        'Count': int(row['Count']),
+                        'SumGB': round(float(row['SumGB']), 2)
+                    }
+                    for _, row in df_c.iterrows()
+                ]
+                creator_rows.append({
+                    'Creator': creator,
+                    'TotalGB': round(total_gb, 2),
+                    'TotalCount': total_count,
+                    'Details': details
+                })
+
+            grand_total = round(summary['SumGB'].astype(float).sum(), 2) if not summary.empty else None
+            grand_count = int(summary['Count'].sum()) if not summary.empty else None
+            return creator_rows, grand_total, grand_count
+
+        def _unlimited_mask(source_df):
+            if source_df.empty:
+                return pd.Series([], dtype=bool)
+
+            if 'PackageBytes' in source_df.columns:
+                series = pd.to_numeric(source_df['PackageBytes'], errors='coerce')
+            elif 'Package' in source_df.columns:
+                series = pd.to_numeric(source_df['Package'], errors='coerce')
+            elif 'PackageValue' in source_df.columns:
+                series = pd.to_numeric(source_df['PackageValue'], errors='coerce')
+            else:
+                return pd.Series([False] * len(source_df), index=source_df.index)
+
+            base_unlimited = series.isna() | (series <= 0)
+
+            if 'ServiceName' not in source_df.columns:
+                return base_unlimited
+
+            if 'ServiceName' not in source_df.columns:
+                return base_unlimited
+
+            name_series = source_df['ServiceName'].fillna('').astype(str)
+            gb_pattern = re.compile(r'(?:\d+(?:\.\d+)?)[\s_-]*(?:gb|gig)\b', re.IGNORECASE)
+            name_has_gb = name_series.str.contains(gb_pattern)
+            name_has_ddc = name_series.str.contains(r'\bDDC\b', case=False, regex=True)
+
+            # If there is no GB quota in the name or it includes DDC, treat it as unlimited.
+            return (~name_has_gb) | name_has_ddc
+
         if use_bq:
             try:
                 bq_date_op = form.cleaned_data.get('date_op')
@@ -229,10 +498,12 @@ def report_view(request):
                     bq_date_op = None
                 if bq_date_op in (None, '') and bq_date_start and bq_date_end:
                     bq_date_op = 'BETWEEN'
-                if bq_date_op == 'EXACT' and not bq_date_value and bq_date_start and bq_date_end:
+                if bq_date_op in {'EXACT', '='} and not bq_date_value and bq_date_start and bq_date_end:
+                    bq_date_op = 'BETWEEN'
+                if bq_date_op in {'<', '>', '<=', '>='} and not bq_date_value and bq_date_start and bq_date_end:
                     bq_date_op = 'BETWEEN'
                 if bq_date_op == 'BETWEEN' and (not bq_date_start or not bq_date_end) and bq_date_value:
-                    bq_date_op = 'EXACT'
+                    bq_date_op = '='
                 df, used_table = run_bq_report_query(
                     creators,
                     limit=limit,
@@ -260,10 +531,10 @@ SELECT
     FORMAT(TName.ServicePrice, 0) AS ServicePrice,
     DATE_FORMAT(NULLIF(TName.StartDate, '0000-00-00'), '%%Y-%%m-%%d') AS StartDate,
     DATE_FORMAT(NULLIF(TName.EndDate, '0000-00-00'), '%%Y-%%m-%%d') AS EndDate,
-    Hse.STrA AS PackageBytes,
+    COALESCE(NULLIF(Hse.STrA, 0), NULLIF(Hse.MTrA, 0), NULLIF(Hse.DTrA, 0), NULLIF(Hse.YTrA, 0), NULLIF(Hse.ExtraTraffic, 0)) AS PackageBytes,
     CASE
-        WHEN Hse.STrA IS NULL THEN NULL
-        ELSE ROUND(Hse.STrA / 1024, 2)
+        WHEN COALESCE(NULLIF(Hse.STrA, 0), NULLIF(Hse.MTrA, 0), NULLIF(Hse.DTrA, 0), NULLIF(Hse.YTrA, 0), NULLIF(Hse.ExtraTraffic, 0)) IS NULL THEN NULL
+        ELSE ROUND(COALESCE(NULLIF(Hse.STrA, 0), NULLIF(Hse.MTrA, 0), NULLIF(Hse.DTrA, 0), NULLIF(Hse.YTrA, 0), NULLIF(Hse.ExtraTraffic, 0)) / 1073741824, 2)
     END AS PackageValue
 FROM {table_path} TName
 JOIN Huser Hu ON TName.User_Id = Hu.User_Id
@@ -314,8 +585,8 @@ LIMIT %s
 
             if 'Package' in final_df.columns:
                 pkg_numeric = pd.to_numeric(final_df['Package'], errors='coerce')
-                if pkg_numeric.notna().any() and pkg_numeric.max() >= 1024:
-                    final_df['Package'] = (pkg_numeric / 1024).round(2)
+                if pkg_numeric.notna().any():
+                    final_df['Package'] = pkg_numeric.round(2)
 
             # build effective filters (reuse from session for downloads)
             filter_serial_post = (request.POST.get('filter_serial') or '').strip().lower()
@@ -371,7 +642,7 @@ LIMIT %s
             session_filters = request.session.get('report_filters') or {}
             use_session_filters = (
                 not filter_input_present
-                and action in {'download_report', 'download_csv', 'download_summary_pdf'}
+                and action in {'download_report', 'download_csv', 'download_summary_pdf', 'download_unlimited_pdf'}
                 and session_filters
             )
 
@@ -418,6 +689,10 @@ LIMIT %s
                         final_df = final_df[serial_series > serial_value]
                     elif serial_op == '<' and serial_value is not None:
                         final_df = final_df[serial_series < serial_value]
+                    elif serial_op == '>=' and serial_value is not None:
+                        final_df = final_df[serial_series >= serial_value]
+                    elif serial_op == '<=' and serial_value is not None:
+                        final_df = final_df[serial_series <= serial_value]
 
             # apply date filter
             date_op = effective_filters.get('date_op')
@@ -437,17 +712,27 @@ LIMIT %s
                 date_col = 'CreateDT' if 'CreateDT' in final_df.columns else 'CreateDate'
                 if date_col in final_df.columns:
                     if date_op in (None, ''):
-                        date_op = 'EXACT'
-                    if date_op == 'EXACT' and date_value is None and date_start and date_end:
+                        date_op = '='
+                    if date_op == 'EXACT':
+                        date_op = '='
+                    if date_op == '=' and date_value is None and date_start and date_end:
                         date_op = 'BETWEEN'
                     elif date_op == 'BETWEEN' and (not date_start or not date_end) and date_value:
-                        date_op = 'EXACT'
+                        date_op = '='
 
                     date_series = pd.to_datetime(final_df[date_col], errors='coerce')
-                    if date_op == 'EXACT' and date_value:
+                    if date_op == '=' and date_value:
                         final_df = final_df[date_series.dt.date == date_value]
                     elif date_op == 'BETWEEN' and date_start and date_end:
                         final_df = final_df[(date_series.dt.date >= date_start) & (date_series.dt.date <= date_end)]
+                    elif date_op == '>' and date_value:
+                        final_df = final_df[date_series.dt.date > date_value]
+                    elif date_op == '<' and date_value:
+                        final_df = final_df[date_series.dt.date < date_value]
+                    elif date_op == '>=' and date_value:
+                        final_df = final_df[date_series.dt.date >= date_value]
+                    elif date_op == '<=' and date_value:
+                        final_df = final_df[date_series.dt.date <= date_value]
 
             # apply SIB serial filter (UserServiceID only)
             sib_serial_op = effective_filters.get('sib_serial_op')
@@ -476,6 +761,10 @@ LIMIT %s
                     final_df = final_df[sib_series > sib_serial_value]
                 elif sib_serial_op == '<' and sib_serial_value is not None:
                     final_df = final_df[sib_series < sib_serial_value]
+                elif sib_serial_op == '>=' and sib_serial_value is not None:
+                    final_df = final_df[sib_series >= sib_serial_value]
+                elif sib_serial_op == '<=' and sib_serial_value is not None:
+                    final_df = final_df[sib_series <= sib_serial_value]
 
             # sort rows grouped by reseller/creator and UserServiceID for easier review
             if 'Creator' in final_df.columns or 'rs_username' in final_df.columns:
@@ -494,121 +783,62 @@ LIMIT %s
                         ascending.append(False)
 
                 final_df = final_df.sort_values(by=sort_cols, ascending=ascending)
-            if action == 'show_summary':
+            if action in {'show_summary', 'download_summary_pdf', 'download_unlimited_pdf'}:
                 show_summary = True
                 show_results = False
-                creator_col = 'Creator' if 'Creator' in final_df.columns else ('rs_username' if 'rs_username' in final_df.columns else None)
-                if not final_df.empty and creator_col and 'Package' in final_df.columns:
-                    final_df['Package'] = pd.to_numeric(final_df['Package'], errors='coerce')
-                    summary = (
-                        final_df.groupby([creator_col, 'ServiceName'])
-                        .agg(Count=('ServiceName', 'size'), SumGB=('Package', 'sum'))
-                        .reset_index()
-                    )
-                    creator_rows = []
-                    for creator in summary[creator_col].unique():
-                        df_c = summary[summary[creator_col] == creator]
-                        total_gb = df_c['SumGB'].astype(float).sum()
-                        total_count = int(df_c['Count'].sum())
-                        details = [
-                            {
-                                'ServiceName': row['ServiceName'],
-                                'Count': int(row['Count']),
-                                'SumGB': round(float(row['SumGB']), 2)
-                            }
-                            for _, row in df_c.iterrows()
-                        ]
-                        creator_rows.append({
-                            'Creator': creator,
-                            'TotalGB': round(total_gb, 2),
-                            'TotalCount': total_count,
-                            'Details': details
-                        })
-                    summary_rows = creator_rows
-                    summary_grand_total = round(summary['SumGB'].astype(float).sum(), 2)
-                    summary_grand_count = int(summary['Count'].sum())
+                creator_col = 'Creator' if 'Creator' in final_df.columns else (
+                    'rs_username' if 'rs_username' in final_df.columns else None
+                )
+                unlimited_mask = _unlimited_mask(final_df)
+                unlimited_df = final_df[unlimited_mask]
+                limited_df = final_df[~unlimited_mask]
 
-            if action == 'download_summary_pdf':
-                show_summary = True
-                show_results = False
-                creator_col = 'Creator' if 'Creator' in final_df.columns else ('rs_username' if 'rs_username' in final_df.columns else None)
-                if not final_df.empty and creator_col and 'Package' in final_df.columns:
-                    final_df['Package'] = pd.to_numeric(final_df['Package'], errors='coerce')
-                    summary = (
-                        final_df.groupby([creator_col, 'ServiceName'])
-                        .agg(Count=('ServiceName', 'size'), SumGB=('Package', 'sum'))
-                        .reset_index()
-                    )
-                    creator_rows = []
-                    for creator in summary[creator_col].unique():
-                        df_c = summary[summary[creator_col] == creator]
-                        total_gb = df_c['SumGB'].astype(float).sum()
-                        total_count = int(df_c['Count'].sum())
-                        details = [
-                            {
-                                'ServiceName': row['ServiceName'],
-                                'Count': int(row['Count']),
-                                'SumGB': round(float(row['SumGB']), 2)
-                            }
-                            for _, row in df_c.iterrows()
-                        ]
-                        creator_rows.append({
-                            'Creator': creator,
-                            'TotalGB': round(total_gb, 2),
-                            'TotalCount': total_count,
-                            'Details': details
-                        })
-                    summary_rows = creator_rows
-                    summary_grand_total = round(summary['SumGB'].astype(float).sum(), 2)
-                    summary_grand_count = int(summary['Count'].sum())
+                summary_rows, summary_grand_total, summary_grand_count = _build_summary_rows(limited_df, creator_col)
+                unlimited_summary_rows, unlimited_grand_total, unlimited_grand_count = _build_summary_rows(
+                    unlimited_df, creator_col
+                )
 
-                if summary_rows:
-                    pdf_rows = []
-                    for row in summary_rows:
-                        for item in row['Details']:
-                            pdf_rows.append({
-                                'Creator': row['Creator'],
-                                'ServiceName': item['ServiceName'],
-                                'SumGB': item['SumGB'],
-                                'Count': item['Count']
-                            })
-                        pdf_rows.append({
-                            'Creator': f"{row['Creator']} Total",
-                            'ServiceName': '',
-                            'SumGB': row['TotalGB'],
-                            'Count': row['TotalCount']
-                        })
-                    pdf_rows.append({
-                        'Creator': 'Grand Total',
-                        'ServiceName': '',
-                        'SumGB': summary_grand_total,
-                        'Count': summary_grand_count
-                    })
-                    pdf_df = pd.DataFrame(pdf_rows)
-                    pdf_data = export_df_to_pdf(pdf_df)
-                    if pdf_data:
-                        resp = HttpResponse(pdf_data, content_type='application/pdf')
-                        filename = _build_report_filename('pdf', creators, effective_filters).replace('report-', 'summary-')
-                        resp['Content-Disposition'] = f'attachment; filename="{filename}"'
-                        return resp
+                if action in {'download_summary_pdf', 'download_unlimited_pdf'}:
+                    if action == 'download_unlimited_pdf':
+                        limited_df = _summary_rows_to_df(summary_rows, summary_grand_total, summary_grand_count)
+                        unlimited_df = _summary_rows_to_df(unlimited_summary_rows, unlimited_grand_total, unlimited_grand_count)
+                        pdf_data = export_summary_tables_to_pdf(limited_df, unlimited_df)
+                        if pdf_data:
+                            resp = HttpResponse(pdf_data, content_type='application/pdf')
+                            filename = _build_report_filename('pdf', creators, effective_filters).replace('report-', 'combined-summary-')
+                            resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+                            return resp
+                    else:
+                        limited_df = _summary_rows_to_df(summary_rows, summary_grand_total, summary_grand_count)
+                        unlimited_df = _summary_rows_to_df(unlimited_summary_rows, unlimited_grand_total, unlimited_grand_count)
+                        pdf_data = export_summary_tables_to_pdf(limited_df, unlimited_df)
+                        if pdf_data:
+                            resp = HttpResponse(pdf_data, content_type='application/pdf')
+                            filename = _build_report_filename('pdf', creators, effective_filters).replace('report-', 'summary-')
+                            resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+                            return resp
 
             if action == 'download_report':
                 pdf_df = final_df.copy()
                 creator_col = 'Creator' if 'Creator' in pdf_df.columns else ('rs_username' if 'rs_username' in pdf_df.columns else None)
-                if not pdf_df.empty and creator_col and ('Package' in pdf_df.columns or 'PackageValue' in pdf_df.columns):
-                    pkg_col = 'Package' if 'Package' in pdf_df.columns else 'PackageValue'
-                    if 'Count' not in pdf_df.columns:
-                        pdf_df['Count'] = None
-                    pkg_numeric = pd.to_numeric(pdf_df[pkg_col], errors='coerce')
+
+                def _add_totals(df):
+                    if df.empty or not creator_col or ('Package' not in df.columns and 'PackageValue' not in df.columns):
+                        return df
+
+                    pkg_col = 'Package' if 'Package' in df.columns else 'PackageValue'
+                    if 'Count' not in df.columns:
+                        df['Count'] = None
+                    pkg_numeric = pd.to_numeric(df[pkg_col], errors='coerce')
                     totals = (
-                        pdf_df.assign(_pkg=pkg_numeric)
+                        df.assign(_pkg=pkg_numeric)
                         .groupby(creator_col)
                         .agg(SumPkg=('_pkg', 'sum'), Count=('Count', 'size'))
                         .reset_index()
                     )
 
                     def _blank_row():
-                        return {c: '' for c in pdf_df.columns}
+                        return {c: '' for c in df.columns}
 
                     total_rows = []
                     for _, row in totals.iterrows():
@@ -619,16 +849,20 @@ LIMIT %s
                         total_rows.append(r)
 
                     grand_total = float(pkg_numeric.sum()) if pkg_numeric.notna().any() else 0
-                    grand_count = int(len(pdf_df))
+                    grand_count = int(len(df))
                     r = _blank_row()
                     r[creator_col] = 'Grand Total'
                     r[pkg_col] = round(grand_total, 2)
                     r['Count'] = grand_count
                     total_rows.append(r)
 
-                    pdf_df = pd.concat([pdf_df, pd.DataFrame(total_rows)], ignore_index=True)
+                    return pd.concat([df, pd.DataFrame(total_rows)], ignore_index=True)
 
-                pdf_data = export_df_to_pdf(pdf_df)
+                unlimited_mask = _unlimited_mask(pdf_df)
+                limited_df = _add_totals(pdf_df[~unlimited_mask].copy())
+                unlimited_df = _add_totals(pdf_df[unlimited_mask].copy())
+
+                pdf_data = export_detail_tables_to_pdf(limited_df, unlimited_df)
                 if pdf_data:
                     resp = HttpResponse(pdf_data, content_type='application/pdf')
                     filename = _build_report_filename('pdf', creators, effective_filters)
@@ -637,20 +871,24 @@ LIMIT %s
             elif action == 'download_csv':
                 csv_df = final_df.copy()
                 creator_col = 'Creator' if 'Creator' in csv_df.columns else ('rs_username' if 'rs_username' in csv_df.columns else None)
-                if not csv_df.empty and creator_col and ('Package' in csv_df.columns or 'PackageValue' in csv_df.columns):
-                    pkg_col = 'Package' if 'Package' in csv_df.columns else 'PackageValue'
-                    if 'Count' not in csv_df.columns:
-                        csv_df['Count'] = None
-                    pkg_numeric = pd.to_numeric(csv_df[pkg_col], errors='coerce')
+
+                def _add_totals_csv(df):
+                    if df.empty or not creator_col or ('Package' not in df.columns and 'PackageValue' not in df.columns):
+                        return df
+
+                    pkg_col = 'Package' if 'Package' in df.columns else 'PackageValue'
+                    if 'Count' not in df.columns:
+                        df['Count'] = None
+                    pkg_numeric = pd.to_numeric(df[pkg_col], errors='coerce')
                     totals = (
-                        csv_df.assign(_pkg=pkg_numeric)
+                        df.assign(_pkg=pkg_numeric)
                         .groupby(creator_col)
                         .agg(SumPkg=('_pkg', 'sum'), Count=('Count', 'size'))
                         .reset_index()
                     )
 
                     def _blank_row_csv():
-                        return {c: '' for c in csv_df.columns}
+                        return {c: '' for c in df.columns}
 
                     total_rows = []
                     for _, row in totals.iterrows():
@@ -661,16 +899,27 @@ LIMIT %s
                         total_rows.append(r)
 
                     grand_total = float(pkg_numeric.sum()) if pkg_numeric.notna().any() else 0
-                    grand_count = int(len(csv_df))
+                    grand_count = int(len(df))
                     r = _blank_row_csv()
                     r[creator_col] = 'Grand Total'
                     r[pkg_col] = round(grand_total, 2)
                     r['Count'] = grand_count
                     total_rows.append(r)
 
-                    csv_df = pd.concat([csv_df, pd.DataFrame(total_rows)], ignore_index=True)
+                    return pd.concat([df, pd.DataFrame(total_rows)], ignore_index=True)
 
-                csv_data = csv_df.to_csv(index=False)
+                unlimited_mask = _unlimited_mask(csv_df)
+                limited_df = _add_totals_csv(csv_df[~unlimited_mask].copy())
+                unlimited_df = _add_totals_csv(csv_df[unlimited_mask].copy())
+
+                output = io.StringIO()
+                output.write('Limited Packages Report\n')
+                limited_df.to_csv(output, index=False)
+                output.write('\n')
+                output.write('Unlimited Packages Report\n')
+                unlimited_df.to_csv(output, index=False)
+
+                csv_data = output.getvalue()
                 resp = HttpResponse(csv_data, content_type='text/csv')
                 filename = _build_report_filename('csv', creators, effective_filters)
                 resp['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -689,5 +938,39 @@ LIMIT %s
         'summary_rows': summary_rows,
         'summary_grand_total': summary_grand_total,
         'summary_grand_count': summary_grand_count,
+        'unlimited_summary_rows': unlimited_summary_rows,
+        'unlimited_grand_total': unlimited_grand_total,
+        'unlimited_grand_count': unlimited_grand_count,
         'error': request.session.pop('error', None)
+    })
+
+
+@login_required
+def sync_logs_view(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden('Forbidden')
+
+    run_result = None
+    run_error = None
+    limit_value = 0
+    write_disposition = 'WRITE_TRUNCATE'
+
+    if request.method == 'POST' and request.POST.get('action') == 'run_sync':
+        try:
+            limit_value = int(request.POST.get('limit') or 0)
+        except ValueError:
+            limit_value = 0
+        write_disposition = request.POST.get('write_disposition') or 'WRITE_TRUNCATE'
+        try:
+            run_result = sync_maria_to_bigquery(limit=limit_value, write_disposition=write_disposition)
+        except Exception as exc:
+            run_error = str(exc)
+
+    logs = read_sync_logs(limit=200)
+    return render(request, 'report/sync_logs.html', {
+        'logs': logs,
+        'run_result': run_result,
+        'run_error': run_error,
+        'limit_value': limit_value,
+        'write_disposition': write_disposition,
     })

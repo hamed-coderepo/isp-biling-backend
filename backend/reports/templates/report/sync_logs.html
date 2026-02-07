@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Logs</title>
+    <link rel="stylesheet" href="{% static 'report/styles/styles.css' %}">
+    <style>
+        body { overflow: auto; }
+        .page-wrap { padding: 2rem; }
+        .log-card { margin-top: 1rem; }
+        .log-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .log-table th, .log-table td { padding: 0.75rem; border-bottom: 1px solid var(--border-color); text-align: left; }
+        .log-table th { color: var(--text-muted); font-weight: 600; }
+        .pill { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 999px; background: var(--secondary); color: var(--text-main); font-size: 0.8rem; }
+        .error-text { color: var(--danger); }
+        .success-text { color: var(--success); }
+        .form-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+        .form-row input, .form-row select { height: 2.5rem; }
+    </style>
+</head>
+<body>
+    <div class="page-wrap">
+        <div class="header">
+            <div>
+                <h2 class="header-title">Database Sync Logs</h2>
+                <p class="header-subtitle">Superuser-only detailed sync history</p>
+            </div>
+        </div>
+
+        <form method="post" class="filter-card">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="run_sync">
+            <div class="form-row">
+                <label class="filter-label-text" for="limit">Row limit (0 = no limit)</label>
+                <input type="number" class="input-main" id="limit" name="limit" value="{{ limit_value }}" min="0">
+
+                <label class="filter-label-text" for="write_disposition">Write disposition</label>
+                <select class="select-ui" id="write_disposition" name="write_disposition">
+                    <option value="WRITE_TRUNCATE" {% if write_disposition == 'WRITE_TRUNCATE' %}selected{% endif %}>WRITE_TRUNCATE</option>
+                    <option value="WRITE_APPEND" {% if write_disposition == 'WRITE_APPEND' %}selected{% endif %}>WRITE_APPEND</option>
+                </select>
+
+                <button type="submit" class="btn-base btn-secondary">
+                    <span>Run Sync</span>
+                </button>
+            </div>
+
+            {% if run_result is not None %}
+            <div class="success-text" style="margin-top:0.75rem;">Synced {{ run_result }} rows.</div>
+            {% endif %}
+            {% if run_error %}
+            <div class="error-text" style="margin-top:0.75rem;">Sync failed: {{ run_error }}</div>
+            {% endif %}
+        </form>
+
+        <div class="table-wrap log-card">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Type</th>
+                        <th>Message</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in logs %}
+                    <tr>
+                        <td>{{ entry.ts|default:"-" }}</td>
+                        <td><span class="pill">{{ entry.type|default:"log" }}</span></td>
+                        <td>{{ entry.message|default:"" }}</td>
+                        <td>{{ entry.data|default:"" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-muted">No logs yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

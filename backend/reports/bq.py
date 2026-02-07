@@ -34,8 +34,11 @@ def run_bq_report_query(creators, limit=1000, date_op=None, date_value=None, dat
         where_clauses.append("LOWER(TRIM(rs_username)) IN UNNEST(@creator_list)")
         params.insert(0, bigquery.ArrayQueryParameter('creator_list', 'STRING', creators_list))
 
-    if date_op == 'EXACT' and date_value:
+    if date_op in {'EXACT', '='} and date_value:
         where_clauses.append("CreateDate = @date_value")
+        params.append(bigquery.ScalarQueryParameter('date_value', 'DATE', date_value))
+    elif date_op in {'<', '>', '<=', '>='} and date_value:
+        where_clauses.append(f"CreateDate {date_op} @date_value")
         params.append(bigquery.ScalarQueryParameter('date_value', 'DATE', date_value))
     elif date_op == 'BETWEEN' and date_start and date_end:
         where_clauses.append("CreateDate BETWEEN @date_start AND @date_end")
