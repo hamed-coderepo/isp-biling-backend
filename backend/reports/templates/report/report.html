@@ -1,0 +1,313 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل گزارشات فارس‌روت | نسخه نهایی</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'report/styles/styles.css' %}">
+</head>
+<body>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <div class="layout-wrapper">
+        <aside id="sidebar" class="sidebar">
+            <button id="menu-toggle" class="btn-menu-toggle" type="button">
+                <span class="material-icons-outlined">menu</span>
+            </button>
+            <nav class="nav-container">
+                <a href="{% url 'reports:report' %}" class="nav-link active">
+                    <span class="material-icons-outlined nav-icon">assignment</span>
+                    <span class="menu-text">پنل گزارشات</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                {% if user.is_authenticated %}
+                <a href="{% url 'logout' %}" class="nav-link">
+                    <span class="material-icons-outlined nav-icon" style="color:var(--text-muted)">logout</span>
+                    <span class="menu-text">خروج</span>
+                </a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="header">
+                <div style="display:flex; align-items:center;">
+                    <button id="mobile-toggle" class="mobile-menu-trigger" type="button">
+                        <span class="material-icons-outlined" style="font-size: 28px;">menu</span>
+                    </button>
+
+                    <div>
+                        <h2 class="header-title">پنل گزارشات فارس‌روت</h2>
+                        <p class="header-subtitle">به سادگی یک کلیک از گزارش کامل فروشات خود آگاه شوید</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if error %}
+            <div class="alert-card">
+                <span class="alert-text">{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <form method="post" class="filter-card">
+                {% csrf_token %}
+                <div style="margin-bottom:1.5rem">
+                    <label class="filter-label-text" for="{{ form.creators_raw.id_for_label }}">{{ form.creators_raw.label }}</label>
+                    {{ form.creators_raw }}
+                </div>
+
+                <div class="filter-grid">
+                    <div class="filter-item-box js-filter-container" data-filter="serial">
+                        <label class="filter-label-text" for="{{ form.serial_op.id_for_label }}">شماره بیگ کیوری</label>
+                        <div class="filter-row">
+                            {{ form.serial_op }}
+                            <div class="input-container-flex js-input-single">
+                                {{ form.serial_value }}
+                            </div>
+                            <div class="input-container-flex is-hidden js-input-range">
+                                <div class="range-container">
+                                    {{ form.serial_min }}
+                                    {{ form.serial_max }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-item-box js-filter-container" data-filter="sib">
+                        <label class="filter-label-text" for="{{ form.sib_serial_op.id_for_label }}">شماره سیب</label>
+                        <div class="filter-row">
+                            {{ form.sib_serial_op }}
+                            <div class="input-container-flex js-input-single">
+                                {{ form.sib_serial_value }}
+                            </div>
+                            <div class="input-container-flex is-hidden js-input-range">
+                                <div class="range-container">
+                                    {{ form.sib_serial_min }}
+                                    {{ form.sib_serial_max }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-item-box js-filter-container" data-filter="date">
+                        <label class="filter-label-text" for="{{ form.date_op.id_for_label }}">تاریخ ثبت</label>
+                        <div class="filter-row">
+                            {{ form.date_op }}
+                            <div class="input-container-flex js-input-single">
+                                {{ form.date_value }}
+                            </div>
+                            <div class="input-container-flex is-hidden js-input-range">
+                                <div class="range-container">
+                                    {{ form.date_start }}
+                                    {{ form.date_end }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button type="reset" class="btn-base btn-danger-outline">
+                        <span>حذف فیلترها</span>
+                    </button>
+
+                    <button type="submit" name="action" value="show_summary" class="btn-base btn-secondary">
+                        <span>نمایش خلاصه</span>
+                    </button>
+
+                    <div class="dropdown-wrapper">
+                        <button id="download-dropdown-btn" type="button" class="btn-base btn-secondary gap-x-2">
+                            <span>دانلود گزارش</span>
+                            <span class="material-icons-outlined" style="font-size:14px">expand_more</span>
+                        </button>
+                        <div id="download-dropdown-menu" class="dropdown-menu">
+                            <button type="submit" class="dropdown-btn-item" name="action" value="download_csv">دانلود فایل CSV</button>
+                            <button type="submit" class="dropdown-btn-item" name="action" value="download_report">دانلود PDF کامل</button>
+                            <button type="submit" class="dropdown-btn-item" name="action" value="download_summary_pdf">دانلود خلاصه PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            {% if show_summary %}
+            <div class="summary-flex-container">
+                <div class="summary-section-wrapper">
+                    <h3 class="summary-title">گزارش خلاصه حجم مصرفی</h3>
+                    <div class="table-wrap summary-container">
+                        {% if summary_rows %}
+                        <table class="data-table summary-table" dir="ltr">
+                            <thead>
+                                <tr>
+                                    <th>Creator</th>
+                                    <th>ServiceName</th>
+                                    <th class="text-right">SUM (GB)</th>
+                                    <th class="text-right">COUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in summary_rows %}
+                                    {% for item in row.Details %}
+                                    <tr class="summary-row">
+                                        <td>{{ row.Creator }}</td>
+                                        <td>{{ item.ServiceName }}</td>
+                                        <td class="text-right">{{ item.SumGB|floatformat:2 }}</td>
+                                        <td class="text-right">{{ item.Count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for row in summary_rows %}
+                                <tr class="font-weight-bold row-subtotal">
+                                    <td>{{ row.Creator }} Total</td>
+                                    <td></td>
+                                    <td class="text-right">{{ row.TotalGB|floatformat:2 }}</td>
+                                    <td class="text-right">{{ row.TotalCount }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="font-weight-bold row-grand-total">
+                                    <td>Grand Total</td>
+                                    <td></td>
+                                    <td class="text-right">{{ summary_grand_total|floatformat:2 }}</td>
+                                    <td class="text-right">{{ summary_grand_count }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        {% else %}
+                        <div class="empty-state">داده ای برای خلاصه یافت نشد.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if show_results %}
+            <div class="table-wrap mt-4">
+                {% if info_tables %}
+                <div class="info-badge">{{ info_tables|join:'، ' }}</div>
+                {% endif %}
+                {% if rows %}
+                <table class="data-table" dir="ltr">
+                    <thead>
+                        <tr>
+                            {% for h in columns %}
+                            <th>{{ h }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            {% for v in row %}
+                            <td>{{ v }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">نتیجه ای برای ریسلر انتخاب شده یافت نشد.</div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const menuToggle = document.getElementById('menu-toggle');
+            const mobileToggle = document.getElementById('mobile-toggle');
+
+            const openSidebar = () => {
+                sidebar.classList.add('is-open');
+                overlay.classList.add('is-active');
+            };
+
+            const closeSidebar = () => {
+                sidebar.classList.remove('is-open');
+                overlay.classList.remove('is-active');
+            };
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', function () {
+                    if (sidebar.classList.contains('is-open')) {
+                        closeSidebar();
+                    } else {
+                        openSidebar();
+                    }
+                });
+            }
+
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', function () {
+                    openSidebar();
+                });
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', closeSidebar);
+            }
+
+            const dropdownBtn = document.getElementById('download-dropdown-btn');
+            const dropdownMenu = document.getElementById('download-dropdown-menu');
+
+            if (dropdownBtn && dropdownMenu) {
+                dropdownBtn.addEventListener('click', function () {
+                    dropdownMenu.classList.toggle('is-show');
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!event.target.closest('.dropdown-wrapper')) {
+                        dropdownMenu.classList.remove('is-show');
+                    }
+                });
+            }
+
+            const toggleRange = (container, selectValue, rangeValue) => {
+                if (!container) return;
+                const single = container.querySelector('.js-input-single');
+                const range = container.querySelector('.js-input-range');
+                const showRange = selectValue === rangeValue;
+                if (single) single.classList.toggle('is-hidden', showRange);
+                if (range) range.classList.toggle('is-hidden', !showRange);
+            };
+
+            const serialContainer = document.querySelector('[data-filter="serial"]');
+            const sibContainer = document.querySelector('[data-filter="sib"]');
+            const dateContainer = document.querySelector('[data-filter="date"]');
+
+            const serialSelect = document.getElementById('{{ form.serial_op.id_for_label }}');
+            const sibSelect = document.getElementById('{{ form.sib_serial_op.id_for_label }}');
+            const dateSelect = document.getElementById('{{ form.date_op.id_for_label }}');
+
+            if (serialSelect) {
+                toggleRange(serialContainer, serialSelect.value, 'BETWEEN');
+                serialSelect.addEventListener('change', function () {
+                    toggleRange(serialContainer, serialSelect.value, 'BETWEEN');
+                });
+            }
+
+            if (sibSelect) {
+                toggleRange(sibContainer, sibSelect.value, 'BETWEEN');
+                sibSelect.addEventListener('change', function () {
+                    toggleRange(sibContainer, sibSelect.value, 'BETWEEN');
+                });
+            }
+
+            if (dateSelect) {
+                toggleRange(dateContainer, dateSelect.value, 'BETWEEN');
+                dateSelect.addEventListener('change', function () {
+                    toggleRange(dateContainer, dateSelect.value, 'BETWEEN');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
