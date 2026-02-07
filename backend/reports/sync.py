@@ -172,7 +172,7 @@ LEFT JOIN Hservice Hse ON TName.Service_Id = Hse.Service_Id
         conn.close()
 
 
-def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE', days=None):
+def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE', days=None, auto=False):
     project = os.getenv('BQ_PROJECT')
     dataset = os.getenv('BQ_DATASET')
     table = os.getenv('BQ_TABLE')
@@ -192,6 +192,7 @@ def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE', days=Non
         sources=source_names,
         limit=limit,
         days=days,
+        auto=auto,
         write_disposition=write_disposition,
     )
     all_dfs = []
@@ -280,8 +281,8 @@ def sync_maria_to_bigquery(limit=0, write_disposition='WRITE_TRUNCATE', days=Non
                 )
                 load_job.result()
                 logger.info("Sync: loaded %s rows into %s", len(df), table_id)
-        log_sync_event('sync_loaded', 'Loaded rows into BigQuery', rows=len(df), table_id=table_id)
+        log_sync_event('sync_loaded', 'Loaded rows into BigQuery', rows=len(df), table_id=table_id, auto=auto)
         return len(df)
     except Exception as exc:
-        log_sync_event('sync_error', 'BigQuery load failed', table_id=table_id, error=str(exc))
+        log_sync_event('sync_error', 'BigQuery load failed', table_id=table_id, error=str(exc), auto=auto)
         raise

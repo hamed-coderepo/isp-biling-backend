@@ -476,16 +476,13 @@ def report_view(request):
             if 'ServiceName' not in source_df.columns:
                 return base_unlimited
 
-            if 'ServiceName' not in source_df.columns:
-                return base_unlimited
-
             name_series = source_df['ServiceName'].fillna('').astype(str)
             gb_pattern = re.compile(r'(?:\d+(?:\.\d+)?)[\s_-]*(?:gb|gig)\b', re.IGNORECASE)
             name_has_gb = name_series.str.contains(gb_pattern)
             name_has_ddc = name_series.str.contains(r'\bDDC\b', case=False, regex=True)
 
-            # If there is no GB quota in the name or it includes DDC, treat it as unlimited.
-            return (~name_has_gb) | name_has_ddc
+            # Unlimited only when GB is missing/zero and name matches unlimited rules.
+            return base_unlimited & ((~name_has_gb) | name_has_ddc)
 
         if use_bq:
             try:
@@ -967,10 +964,34 @@ def sync_logs_view(request):
             run_error = str(exc)
 
     logs = read_sync_logs(limit=200)
+    auto_enabled = os.getenv('AUTO_SYNC_ENABLED', '0') == '1'
+    auto_interval = int(os.getenv('AUTO_SYNC_INTERVAL_MINUTES', '30'))
+    auto_days = int(os.getenv('AUTO_SYNC_DAYS', '90'))
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    next_run_at = now_utc + datetime.timedelta(minutes=auto_interval)
+
+    auto_count = 0
+    last_auto_entry = None
+    for entry in logs:
+        data = entry.get('data') or {}
+        if data.get('auto') or entry.get('type') == 'auto_sync_start':
+            auto_count += 1
+    for entry in reversed(logs):
+        data = entry.get('data') or {}
+        if data.get('auto') or entry.get('type') == 'auto_sync_start':
+            last_auto_entry = entry
+            break
+
     return render(request, 'report/sync_logs.html', {
         'logs': logs,
         'run_result': run_result,
         'run_error': run_error,
         'limit_value': limit_value,
         'write_disposition': write_disposition,
+        'auto_enabled': auto_enabled,
+        'auto_interval': auto_interval,
+        'auto_days': auto_days,
+        'next_run_at': next_run_at,
+        'auto_count': auto_count,
+        'last_auto_entry': last_auto_entry,
     })

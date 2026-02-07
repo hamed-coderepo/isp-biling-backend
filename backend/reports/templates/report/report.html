@@ -59,7 +59,7 @@
                 {% csrf_token %}
                 <div style="margin-bottom:1.5rem">
                     <label class="filter-label-text">نام ریسلرها</label>
-                    <input type="text" class="input-main" name="creators_raw" value="{{ form.creators_raw.value|default_if_none:'' }}" placeholder="مثال: Sediqi-Passaband, Reseller-A">
+                    <input type="text" class="input-main" name="creators_raw" value="{{ form.creators_raw.value|default_if_none:'' }}" placeholder="مثال: Ahmad Mahmood, Ghafoor Hamidi">
                 </div>
 
                 <div class="filter-grid">
