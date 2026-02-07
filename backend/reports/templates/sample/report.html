@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل گزارشات فارس‌روت | نسخه نهایی</title>
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="Static/styles/styles.css">
+
+</head>
+<body>
+
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <div class="layout-wrapper">
+        <aside id="sidebar" class="sidebar">
+            <button id="menu-toggle" class="btn-menu-toggle">
+                <span class="material-icons-outlined">menu</span>
+            </button>
+            <nav class="nav-container">
+                <a href="#" class="nav-link active">
+                    <span class="material-icons-outlined nav-icon">assignment</span>
+                    <span class="menu-text">پنل گزارشات</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#" class="nav-link">
+                    <span class="material-icons-outlined nav-icon" style="color:var(--text-muted)">logout</span>
+                    <span class="menu-text">خروج</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <span class="material-icons-outlined nav-icon" style="color:var(--text-muted)">settings</span>
+                    <span class="menu-text">تنظیمات</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="header">
+                <div style="display:flex; align-items:center;">
+                    <button id="mobile-toggle" class="mobile-menu-trigger">
+                        <span class="material-icons-outlined" style="font-size: 28px;">menu</span>
+                    </button>
+                    
+                    <div>
+                        <h2 class="header-title">پنل گزارشات فارس‌روت</h2>
+                        <p class="header-subtitle">به سادگی یک کلیک از گزارش کامل فروشات خود آگاه شوید</p>
+                    </div>
+                </div>
+            </div>
+
+            <form class="filter-card">
+                <div style="margin-bottom:1.5rem">
+                    <label class="filter-label-text">نام ریسلرها</label>
+                    <input type="text" class="input-main" placeholder="مثال: Sediqi-Passaband, Reseller-A">
+                </div>
+
+                <div class="filter-grid">
+                    <div class="filter-item-box js-filter-container">
+                        <label class="filter-label-text">شماره بیگ کیوری</label>
+                        <div class="filter-row">
+                            <div class="select-ui js-custom-select">
+                                <span class="selected-value">شرط</span>
+                                <span class="material-icons-outlined" style="font-size: 14px;">expand_more</span>
+                                <div class="filter-dropdown-menu">
+                                    <div class="filter-option" data-value="NONE">بدون شرط</div>
+                                    <div class="filter-option" data-value="=">مساوی</div>
+                                    <div class="filter-option" data-value="<">کوچکتر</div>
+                                    <div class="filter-option" data-value=">">بزرگتر</div>
+                                    <div class="filter-option" data-value=">=">بزرگتر مساوی</div>
+                                    <div class="filter-option" data-value="<=">کوچکتر مساوی</div>
+                                    <div class="filter-option" data-value="BETWEEN">بازه عددی</div>
+                                </div>
+                            </div>
+                            <div class="input-container-flex js-input-single">
+                                <input type="number" class="dynamic-input" placeholder="مقدار...">
+                            </div>
+                            <div class="input-container-flex is-hidden js-input-range">
+                                <div class="range-container">
+                                    <input type="number" class="dynamic-input" placeholder="از">
+                                    <input type="number" class="dynamic-input" placeholder="تا">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-item-box js-filter-container">
+                        <label class="filter-label-text">شماره سیب</label>
+                        <div class="filter-row">
+                            <div class="select-ui js-custom-select">
+                                <span class="selected-value">شرط</span>
+                                <span class="material-icons-outlined" style="font-size: 14px;">expand_more</span>
+                                <div class="filter-dropdown-menu">
+                                    <div class="filter-option" data-value="NONE">بدون شرط</div>
+                                    <div class="filter-option" data-value="=">مساوی</div>
+                                    <div class="filter-option" data-value="<">کوچکتر</div>
+                                    <div class="filter-option" data-value=">">بزرگتر</div>
+                                    <div class="filter-option" data-value=">=">بزرگتر مساوی</div>
+                                    <div class="filter-option" data-value="<=">کوچکتر مساوی</div>
+                                    <div class="filter-option" data-value="BETWEEN">بازه عددی</div>
+                                </div>
+                            </div>
+                            <div class="input-container-flex js-input-single">
+                                <input type="number" class="dynamic-input" placeholder="مقدار...">
+                            </div>
+                            <div class="input-container-flex is-hidden js-input-range">
+                                <div class="range-container">
+                                    <input type="number" class="dynamic-input" placeholder="از">
+                                    <input type="number" class="dynamic-input" placeholder="تا">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-item-box js-filter-container">
+                        <label class="filter-label-text">تاریخ ثبت</label>
+                        <div class="filter-row">
+                            <div class="select-ui js-custom-select">
+                                <span class="selected-value">شرط</span>
+                                <span class="material-icons-outlined" style="font-size: 14px;">expand_more</span>
+                                <div class="filter-dropdown-menu">
+                                    <div class="filter-option" data-value="NONE">بدون شرط</div>
+                                    <div class="filter-option" data-value="=">مساوی</div>
+                                    <div class="filter-option" data-value="<">قبل از</div>
+                                    <div class="filter-option" data-value=">">بعد از</div>
+                                    <div class="filter-option" data-value=">=">بزرگتر مساوی</div>
+                                    <div class="filter-option" data-value="<=">کوچکتر مساوی</div>
+                                    <div class="filter-option" data-value="BETWEEN">بازه تاریخ</div>
+                                </div>
+                            </div>
+                            <div class="input-container-flex js-input-single">
+                                <input type="date" class="dynamic-input">
+                            </div>
+                            <div class="input-container-flex is-hidden js-input-range">
+                                <div class="range-container">
+                                    <input type="date" class="dynamic-input">
+                                    <input type="date" class="dynamic-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button type="button" class="btn-base btn-danger-outline">
+                        <span>حذف فیلترها</span>
+                    </button>
+
+                    <button type="button" class="btn-base btn-secondary">
+                        <span>نمایش خلاصه</span>
+                    </button>
+
+                    <div class="dropdown-wrapper">
+                        <button id="download-dropdown-btn" type="button" class="btn-base btn-secondary gap-x-2">
+                            <span>دانلود گزارش</span>
+                            <span class="material-icons-outlined" style="font-size:14px">expand_more</span>
+                        </button>
+                        <div id="download-dropdown-menu" class="dropdown-menu">
+                            <button type="button" class="dropdown-btn-item">دانلود فایل اکسل</button>
+                            <button type="button" class="dropdown-btn-item">دانلود PDF کامل</button>
+                            <button type="button" class="dropdown-btn-item">دانلود خلاصه PDF</button>
+                            <button type="button" class="dropdown-btn-item">دانلود گزارش بسته های نامحدود PDF</button>                            
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+
+            <div class="summary-flex-container">
+                <div class="summary-section-wrapper">
+                    <h3 class="summary-title">گزاش خلاصه حجم مصرفی</h3>
+                    <div class="table-wrap summary-container">
+                        <table class="data-table summary-table" dir="ltr">
+                            <thead>
+                                <tr>
+                                    <th>Creator</th>
+                                    <th>ServiceName</th>
+                                    <th class="text-right">SUM (GB)</th>
+                                    <th class="text-right">COUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="summary-row">
+                                    <td>FarsRoot_User</td>
+                                    <td>1Gb</td>
+                                    <td class="text-right">120.50</td>
+                                    <td class="text-right">15</td>
+                                </tr>
+                                <tr class="font-weight-bold row-subtotal">
+                                    <td>FarsRoot_User Total</td>
+                                    <td></td>
+                                    <td class="text-right">120.50</td>
+                                    <td class="text-right">15</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="font-weight-bold row-grand-total">
+                                    <td>Grand Total</td>
+                                    <td></td>
+                                    <td class="text-right">120.50</td>
+                                    <td class="text-right">15</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="summary-section-wrapper">
+                    <h3 class="summary-title">گزارش خلاصه بسته های نا محدود</h3>
+                    <div class="table-wrap summary-container">
+                        <table class="data-table summary-table" dir="ltr">
+                            <thead>
+                                <tr>
+                                    <th>Creator</th>
+                                    <th>ServiceName</th>
+                                    <th class="text-right">SUM (GB)</th>
+                                    <th class="text-right">COUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="summary-row">
+                                    <td>FarsRoot_Admin</td>
+                                    <td>1mbps</td>
+                                    <td class="text-right">85.20</td>
+                                    <td class="text-right">8</td>
+                                </tr>
+                                <tr class="font-weight-bold row-subtotal">
+                                    <td>FarsRoot_Admin Total</td>
+                                    <td></td>
+                                    <td class="text-right">85.20</td>
+                                    <td class="text-right">8</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="font-weight-bold row-grand-total">
+                                    <td>Grand Total</td>
+                                    <td></td>
+                                    <td class="text-right">85.20</td>
+                                    <td class="text-right">8</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const desktopToggle = document.getElementById('menu-toggle');
+            const mobileToggle = document.getElementById('mobile-toggle');
+
+            function toggleSidebar() {
+                const isOpen = sidebar.classList.contains('is-open');
+                if (isOpen) {
+                    sidebar.classList.remove('is-open');
+                    overlay.classList.remove('is-visible');
+                } else {
+                    sidebar.classList.add('is-open');
+                    overlay.classList.add('is-visible');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('is-open');
+                overlay.classList.remove('is-visible');
+            }
+
+            if(desktopToggle) desktopToggle.addEventListener('click', toggleSidebar);
+            if(mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+            if(overlay) overlay.addEventListener('click', closeSidebar);
+
+            const customSelects = document.querySelectorAll('.js-custom-select');
+            customSelects.forEach(select => {
+                select.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    customSelects.forEach(s => {
+                        if (s !== select) s.querySelector('.filter-dropdown-menu').classList.remove('show');
+                    });
+                    select.querySelector('.filter-dropdown-menu').classList.toggle('show');
+                });
+
+                const options = select.querySelectorAll('.filter-option');
+                options.forEach(opt => {
+                    opt.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const value = opt.getAttribute('data-value');
+                        const text = opt.innerText;
+                        const container = select.closest('.js-filter-container');
+                        
+                        select.querySelector('.selected-value').innerText = text;
+                        select.querySelector('.filter-dropdown-menu').classList.remove('show');
+
+                        const single = container.querySelector('.js-input-single');
+                        const range = container.querySelector('.js-input-range');
+
+                        single.classList.remove('is-hidden');
+                        range.classList.add('is-hidden');
+
+                        if (value === 'BETWEEN') {
+                            single.classList.add('is-hidden');
+                            range.classList.remove('is-hidden');
+                        }
+                    });
+                });
+            });
+
+            const downloadBtn = document.getElementById('download-dropdown-btn');
+            const downloadMenu = document.getElementById('download-dropdown-menu');
+
+            if (downloadBtn && downloadMenu) {
+                downloadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    downloadMenu.classList.toggle('is-show');
+                });
+            }
+
+            window.addEventListener('click', () => {
+                if (downloadMenu) downloadMenu.classList.remove('is-show');
+                document.querySelectorAll('.filter-dropdown-menu').forEach(m => m.classList.remove('show'));
+            });
+        });
+    </script>
+</body>
+</html>
