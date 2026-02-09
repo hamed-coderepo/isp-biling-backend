@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>پنل گزارشات فارس‌روت</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1217;
+      --card: #161b22;
+      --text: #e6edf3;
+      --muted: #9da7b3;
+      --border: #2a323d;
+      --accent: #3b82f6;
+    }
+    * { font-family: 'Vazirmatn', sans-serif; }
+    body { background: var(--bg); color: var(--text); }
+    .navbar { background: #111826 !important; border-bottom: 1px solid var(--border); }
+    .navbar-brand, .nav-link { color: var(--text) !important; }
+    .card { background: var(--card); border: 1px solid var(--border); }
+    .text-muted { color: var(--muted) !important; }
+    .form-control, .custom-select { background: #0f172a; color: var(--text); border: 1px solid var(--border); }
+    .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 0.2rem rgba(59,130,246,.2); }
+    .table { color: var(--text); }
+    .table thead th { background: #111826; border-color: var(--border); }
+    .table td, .table th { border-color: var(--border); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); }
+    .badge-soft { background: rgba(59,130,246,.15); color: #9cc2ff; border: 1px solid rgba(59,130,246,.35); }
+    .page-header { background: linear-gradient(135deg, #1b2638, #0f1217); border: 1px solid var(--border); }
+    .shadow-soft { box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    .chip { background: #111826; border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 999px; font-size: 12px; }
+    .bill-card { background: linear-gradient(180deg, #121a27 0%, #0f1217 100%); border: 1px solid #2a323d; }
+    .bill-head { border-bottom: 1px dashed #2a323d; }
+    .bill-total { font-size: 22px; font-weight: 700; color: #a7f3d0; }
+    .bill-chip { background: rgba(167,243,208,.12); color: #a7f3d0; border: 1px solid rgba(167,243,208,.35); }
+    .pkg-card { background: #0f172a; border: 1px solid #2a323d; border-radius: 12px; }
+    .pkg-icon { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; background: rgba(59,130,246,.15); color: #9cc2ff; font-size: 18px; }
+    .pkg-count { font-size: 18px; font-weight: 600; }
+    .action-buttons > * { margin-left: 0.5rem; }
+    .action-buttons .dropdown-menu { right: auto; left: 0; }
+    @media (max-width: 767.98px) {
+      .action-buttons { flex-direction: row; justify-content: flex-end; }
+      .action-buttons > * { margin-left: 0.5rem; margin-bottom: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="/reports/">پنل گزارشات فارس‌روت</a>
+  <div class="collapse navbar-collapse">
+    <ul class="navbar-nav ml-auto">
+      {% if user.is_authenticated %}
+      <li class="nav-item"><span class="nav-link">{{ user.username }}</span></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">خروج</a></li>
+      {% else %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">ورود</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</nav>
+<div class="container-fluid mt-4">
+  {% block content %}{% endblock %}
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc2e1rV9UqUq5c5X4qXrVbJgF0CQa8Y7G7E0G2xR6" crossorigin="anonymous"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.jQuery && jQuery.fn && jQuery.fn.dropdown) {
+      return;
+    }
+    const toggles = document.querySelectorAll('[data-toggle="dropdown"]');
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        const parent = toggle.closest('.btn-group, .dropdown');
+        if (!parent) return;
+        const menu = parent.querySelector('.dropdown-menu');
+        if (!menu) return;
+        const isOpen = menu.classList.contains('show');
+        document.querySelectorAll('.dropdown-menu.show').forEach(function (m) {
+          m.classList.remove('show');
+        });
+        menu.classList.toggle('show', !isOpen);
+        toggle.setAttribute('aria-expanded', String(!isOpen));
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('.btn-group, .dropdown')) return;
+      document.querySelectorAll('.dropdown-menu.show').forEach(function (m) {
+        m.classList.remove('show');
+      });
+      document.querySelectorAll('[data-toggle="dropdown"][aria-expanded="true"]').forEach(function (t) {
+        t.setAttribute('aria-expanded', 'false');
+      });
+    });
+  });
+</script>
+</body>
+</html>

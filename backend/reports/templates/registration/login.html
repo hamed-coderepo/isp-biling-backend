@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورود | پنل گزارشات فارس‌روت</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'report/styles/styles.css' %}">
+</head>
+<body>
+    <div class="layout-wrapper" style="align-items:center; justify-content:center;">
+        <main class="main-content" style="width:100%; max-width:520px;">
+            <div class="header" style="margin-bottom:1.5rem;">
+                <div>
+                    <h2 class="header-title">ورود به پنل گزارشات</h2>
+                    <p class="header-subtitle">اطلاعات حساب خود را وارد کنید</p>
+                </div>
+            </div>
+
+            <form method="post" class="filter-card">
+                {% csrf_token %}
+                <div style="margin-bottom:1.25rem">
+                    <label class="filter-label-text" for="id_username">نام کاربری</label>
+                    <input type="text" name="username" autofocus required class="input-main" id="id_username">
+                </div>
+
+                <div style="margin-bottom:1.25rem">
+                    <label class="filter-label-text" for="id_password">رمز عبور</label>
+                    <input type="password" name="password" required class="input-main" id="id_password">
+                </div>
+
+                <div class="actions-bar" style="justify-content:flex-start;">
+                    <button type="submit" class="btn-base btn-secondary">
+                        <span>ورود</span>
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

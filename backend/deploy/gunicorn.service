@@ -1,0 +1,23 @@
+[Unit]
+Description=Gunicorn for isp_report
+After=network.target
+
+[Service]
+User=deploy
+Group=www-data
+WorkingDirectory=/home/deploy/apps/backend
+EnvironmentFile=/home/deploy/apps/backend/.env
+RuntimeDirectory=gunicorn
+RuntimeDirectoryMode=0755
+ExecStart=/home/deploy/apps/venv/bin/gunicorn \
+  isp_report.wsgi:application \
+  --workers 3 \
+  --bind unix:/run/gunicorn/gunicorn.sock \
+  --access-logfile - \
+  --error-logfile - \
+  --timeout 120
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

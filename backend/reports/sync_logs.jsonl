@@ -1,0 +1,84 @@
+{"ts": "2026-02-07T06:48:02.254580+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T06:48:02.256031+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T06:49:18.617819+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 537174}}
+{"ts": "2026-02-07T06:49:18.619373+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-07T06:49:57.498711+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 250921}}
+{"ts": "2026-02-07T06:49:57.499628+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-07T06:52:11.736463+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1066809}}
+{"ts": "2026-02-07T06:53:24.940623+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T06:53:24.941484+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T06:54:19.686366+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 537176}}
+{"ts": "2026-02-07T06:54:19.687308+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-07T06:54:50.186672+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 250938}}
+{"ts": "2026-02-07T06:54:50.187585+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-07T06:56:43.015341+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1066835}}
+{"ts": "2026-02-07T06:57:13.737023+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T06:57:13.738357+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T06:57:21.477396+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T06:57:21.479107+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T06:58:58.606158+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 537182}}
+{"ts": "2026-02-07T06:58:58.607797+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-07T06:59:10.734189+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 537182}}
+{"ts": "2026-02-07T06:59:10.735562+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-07T06:59:25.780203+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 250952}}
+{"ts": "2026-02-07T06:59:25.781661+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-07T06:59:39.565909+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 250953}}
+{"ts": "2026-02-07T06:59:39.566808+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-07T07:00:09.351509+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T07:00:09.352435+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T07:01:08.462868+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 537184}}
+{"ts": "2026-02-07T07:01:08.464653+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-07T07:02:01.019841+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 250961}}
+{"ts": "2026-02-07T07:02:01.021334+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-07T07:04:16.267871+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1066875}}
+{"ts": "2026-02-07T07:04:54.965637+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1066873}}
+{"ts": "2026-02-07T07:05:26.817682+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1066880}}
+{"ts": "2026-02-07T07:07:47.787082+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T07:07:47.788504+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T07:08:09.532704+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T07:08:09.534137+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T07:08:30.368763+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-07T07:08:30.369366+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-07T07:09:31.510420+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 537198}}
+{"ts": "2026-02-07T07:09:31.511875+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-07T07:10:00.049541+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 537199}}
+{"ts": "2026-02-07T07:10:00.051340+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-07T07:10:11.309974+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 250992}}
+{"ts": "2026-02-07T07:10:11.310945+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-07T07:10:26.071762+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 250995}}
+{"ts": "2026-02-07T07:10:26.072509+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-07T07:13:43.540864+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1066941}}
+{"ts": "2026-02-07T07:14:11.009907+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1066938}}
+{"ts": "2026-02-07T07:20:35.299342+00:00", "type": "sync_loaded", "message": "Loaded rows into BigQuery", "data": {"rows": 1855128, "table_id": "frsphotspots.HSP.report_user_service"}}
+{"ts": "2026-02-07T07:20:39.014878+00:00", "type": "sync_loaded", "message": "Loaded rows into BigQuery", "data": {"rows": 1855135, "table_id": "frsphotspots.HSP.report_user_service"}}
+{"ts": "2026-02-08T07:37:48.564164+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "days": null, "auto": false, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-08T07:37:48.564692+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-08T07:38:46.521427+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 538396}}
+{"ts": "2026-02-08T07:38:46.522317+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-08T08:02:58.972075+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "days": null, "auto": false, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-08T08:02:58.972803+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-08T08:03:56.619950+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 538441}}
+{"ts": "2026-02-08T08:03:56.620884+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-08T08:04:10.200855+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "days": 1825, "auto": false, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-08T08:04:10.201353+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-08T08:05:07.702684+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 538443}}
+{"ts": "2026-02-08T08:05:07.703357+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-08T08:05:48.178869+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 252876}}
+{"ts": "2026-02-08T08:05:48.179467+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-08T08:06:02.937158+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "days": 1825, "auto": false, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-08T08:06:02.937429+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-08T08:07:01.899836+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 538444}}
+{"ts": "2026-02-08T08:07:01.900668+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-08T08:07:31.731177+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 252880}}
+{"ts": "2026-02-08T08:07:31.731921+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-08T08:10:21.975628+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 1070772}}
+{"ts": "2026-02-08T08:11:20.912765+00:00", "type": "sync_loaded", "message": "Loaded rows into BigQuery", "data": {"rows": 1862096, "table_id": "frsphotspots.HSP.report_user_service", "auto": false}}
+{"ts": "2026-02-08T10:00:42.468430+00:00", "type": "auto_sync_start", "message": "Auto sync triggered", "data": {"interval_minutes": 60, "days": 450, "auto": true}}
+{"ts": "2026-02-08T10:00:42.470212+00:00", "type": "sync_start", "message": "Starting BigQuery sync", "data": {"table_id": "frsphotspots.HSP.report_user_service", "sources": ["sib_ghor", "hotspot2", "hotspot3"], "limit": 0, "days": 450, "auto": true, "write_disposition": "WRITE_TRUNCATE"}}
+{"ts": "2026-02-08T10:00:42.470545+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "sib_ghor", "host": "203.171.110.195", "db": "deltasib"}}
+{"ts": "2026-02-08T10:01:31.141597+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "sib_ghor", "rows": 447944}}
+{"ts": "2026-02-08T10:01:31.142118+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot2", "host": "103.161.237.138", "db": "deltasib"}}
+{"ts": "2026-02-08T10:02:32.062976+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot2", "rows": 253034}}
+{"ts": "2026-02-08T10:02:32.063762+00:00", "type": "source_start", "message": "Fetching rows from source", "data": {"source": "hotspot3", "host": "103.161.237.218", "db": "deltasib"}}
+{"ts": "2026-02-08T10:05:43.342656+00:00", "type": "source_success", "message": "Fetched rows from source", "data": {"source": "hotspot3", "rows": 944422}}
+{"ts": "2026-02-08T10:06:42.874940+00:00", "type": "sync_loaded", "message": "Loaded rows into BigQuery", "data": {"rows": 1645400, "table_id": "frsphotspots.HSP.report_user_service", "auto": true}}

@@ -1,0 +1,7 @@
+venv/
+.env
+keys.json
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.cache.sqlite3

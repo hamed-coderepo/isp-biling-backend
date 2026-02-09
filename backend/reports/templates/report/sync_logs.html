@@ -1,0 +1,116 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Logs</title>
+    <link rel="stylesheet" href="{% static 'report/styles/styles.css' %}">
+    <style>
+        body { overflow: auto; }
+        .page-wrap { padding: 2rem; }
+        .log-card { margin-top: 1rem; }
+        .log-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .log-table th, .log-table td { padding: 0.75rem; border-bottom: 1px solid var(--border-color); text-align: left; }
+        .log-table th { color: var(--text-muted); font-weight: 600; }
+        .pill { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 999px; background: var(--secondary); color: var(--text-main); font-size: 0.8rem; }
+        .error-text { color: var(--danger); }
+        .success-text { color: var(--success); }
+        .form-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+        .form-row input, .form-row select { height: 2.5rem; }
+        .stats-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+        .stat-card { padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-color); background: var(--card-bg); min-width: 220px; }
+        .stat-label { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.35rem; }
+        .stat-value { font-size: 1.1rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="page-wrap">
+        <div class="header">
+            <div>
+                <h2 class="header-title">Database Sync Logs</h2>
+                <p class="header-subtitle">Superuser-only detailed sync history</p>
+            </div>
+        </div>
+
+        <form method="post" class="filter-card">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="run_sync">
+            <div class="form-row">
+                <label class="filter-label-text" for="limit">Row limit (0 = no limit)</label>
+                <input type="number" class="input-main" id="limit" name="limit" value="{{ limit_value }}" min="0">
+
+                <label class="filter-label-text" for="days">Days (0 = all)</label>
+                <input type="number" class="input-main" id="days" name="days" value="{{ days_value }}" min="0">
+
+                <label class="filter-label-text" for="write_disposition">Write disposition</label>
+                <select class="select-ui" id="write_disposition" name="write_disposition">
+                    <option value="WRITE_TRUNCATE" {% if write_disposition == 'WRITE_TRUNCATE' %}selected{% endif %}>WRITE_TRUNCATE</option>
+                    <option value="WRITE_APPEND" {% if write_disposition == 'WRITE_APPEND' %}selected{% endif %}>WRITE_APPEND</option>
+                </select>
+
+                <button type="submit" class="btn-base btn-secondary">
+                    <span>Run Sync</span>
+                </button>
+            </div>
+
+            {% if run_result is not None %}
+            <div class="success-text" style="margin-top:0.75rem;">Synced {{ run_result }} rows.</div>
+            {% endif %}
+            {% if run_error %}
+            <div class="error-text" style="margin-top:0.75rem;">Sync failed: {{ run_error }}</div>
+            {% endif %}
+        </form>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Auto sync status</div>
+                <div class="stat-value">{% if auto_enabled %}Enabled{% else %}Disabled{% endif %}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Auto sync counter</div>
+                <div class="stat-value">{{ auto_count }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Interval / Days</div>
+                <div class="stat-value">{{ auto_interval }} min / {{ auto_days }} days</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Next run (UTC)</div>
+                <div class="stat-value">{{ next_run_at }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Last auto sync (UTC)</div>
+                <div class="stat-value">{% if last_auto_entry %}{{ last_auto_entry.ts }}{% else %}-{% endif %}</div>
+            </div>
+        </div>
+
+        <div class="table-wrap log-card">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Type</th>
+                        <th>Message</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in logs %}
+                    <tr>
+                        <td>{{ entry.ts|default:"-" }}</td>
+                        <td><span class="pill">{{ entry.type|default:"log" }}</span></td>
+                        <td>{{ entry.message|default:"" }}</td>
+                        <td>{{ entry.data|default:"" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-muted">No logs yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

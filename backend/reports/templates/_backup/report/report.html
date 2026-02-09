@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card page-header shadow-soft mb-4">
+  <div class="card-body d-flex flex-wrap align-items-center justify-content-between">
+    <div>
+      <h2 class="mb-1">پنل گزارشات فارس‌روت</h2>
+      <p class="text-muted mb-0">شماره مسلسل یوزرها را وارد کنید، نوع شرط و تاریخ را انتخاب کنید.</p>
+    </div>
+    <div class="d-flex align-items-center mt-3 mt-md-0">
+      <span class="chip ml-2">گزارشات بلادرنگ</span>
+      <span class="chip">نسخه سازمانی</span>
+    </div>
+  </div>
+</div>
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="post" class="card shadow-soft mb-4">{% csrf_token %}
+  <div class="card-body">
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="form-group">
+          {{ form.creators_raw.label_tag }}
+          {{ form.creators_raw }}
+          <small class="form-text text-muted">اگر خالی باشد، بر اساس ریسلر تخصیص‌یافته نمایش داده می‌شود.</small>
+        </div>
+      </div>
+      <div class="col-lg-4"></div>
+    </div>
+    <div class="row">
+      <div class="col-lg-6 mb-3">
+        <div class="p-3 border rounded">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="text-muted mb-0">فیلتر شماره مسلسل</h6>
+            <small class="text-muted">شرط و مقدار را انتخاب کنید</small>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              {{ form.serial_op.label_tag }}
+              {{ form.serial_op }}
+            </div>
+            <div class="form-group col-md-8">
+              {{ form.serial_value.label_tag }}
+              {{ form.serial_value }}
+            </div>
+            <div class="form-group col-md-6">
+              {{ form.serial_min.label_tag }}
+              {{ form.serial_min }}
+            </div>
+            <div class="form-group col-md-6">
+              {{ form.serial_max.label_tag }}
+              {{ form.serial_max }}
+            </div>
+            <div class="col-12">
+              <small class="form-text text-muted">برای بازه از «بین» استفاده کنید و از/تا را پر کنید.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6 mb-3">
+        <div class="p-3 border rounded">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="text-muted mb-0">فیلتر تاریخ</h6>
+            <small class="text-muted">بازه تاریخ را مشخص کنید</small>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              {{ form.date_op.label_tag }}
+              {{ form.date_op }}
+            </div>
+            <div class="form-group col-md-4">
+              {{ form.date_start.label_tag }}
+              {{ form.date_start }}
+            </div>
+            <div class="form-group col-md-4">
+              {{ form.date_end.label_tag }}
+              {{ form.date_end }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12 mb-3">
+        <div class="p-3 border rounded">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="text-muted mb-0">فیلتر شماره مسلسل سیب</h6>
+            <small class="text-muted">براساس UserServiceID</small>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              {{ form.sib_serial_op.label_tag }}
+              {{ form.sib_serial_op }}
+            </div>
+            <div class="form-group col-md-8">
+              {{ form.sib_serial_value.label_tag }}
+              {{ form.sib_serial_value }}
+            </div>
+            <div class="form-group col-md-6">
+              {{ form.sib_serial_min.label_tag }}
+              {{ form.sib_serial_min }}
+            </div>
+            <div class="form-group col-md-6">
+              {{ form.sib_serial_max.label_tag }}
+              {{ form.sib_serial_max }}
+            </div>
+            <div class="col-12">
+              <small class="form-text text-muted">برای بازه از «بین» استفاده کنید و از/تا را پر کنید.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-end mt-3 action-buttons">
+      <button name="action" value="show_summary" class="btn btn-primary btn-sm mb-2 ml-md-2">مشاهده خلاصه</button>
+      <div class="btn-group mb-2">
+        <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          دانلود گزارش
+        </button>
+        <div class="dropdown-menu dropdown-menu-right">
+          <button class="dropdown-item" name="action" value="download_csv">دانلود CSV (English)</button>
+          <button class="dropdown-item" name="action" value="download_report">دانلود PDF</button>
+          <button class="dropdown-item" name="action" value="download_summary_pdf">دانلود خلاصه PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if show_results and rows %}
+  <div class="d-flex align-items-center mb-2">
+    <h4 class="mb-0">نتایج</h4>
+    {% if info_tables %}<span class="badge badge-soft ml-2">{{ info_tables|join:'، ' }}</span>{% endif %}
+  </div>
+  <div class="card shadow-soft">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0">
+          <thead>
+            <tr>
+              {% for h in columns %}
+                <th>{{ h }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr>
+              {% for v in row %}
+              <td>{{ v }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% elif show_results and not rows %}
+  <p>نتیجه‌ای برای ریسلر انتخاب‌شده یافت نشد.</p>
+{% endif %}
+
+{% if show_summary %}
+  <div class="card shadow-soft mt-4">
+    <div class="card-body">
+      {% if summary_rows %}
+        <div class="table-responsive summary-table" dir="ltr">
+          <table class="table table-sm table-bordered mb-0">
+            <thead>
+              <tr>
+                <th>Creator</th>
+                <th>ServiceName</th>
+                <th class="text-right">SUM (GB)</th>
+                <th class="text-right">COUNT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in summary_rows %}
+                {% for item in row.Details %}
+                <tr>
+                  <td>{{ row.Creator }}</td>
+                  <td>{{ item.ServiceName }}</td>
+                  <td class="text-right">{{ item.SumGB|floatformat:2 }}</td>
+                  <td class="text-right">{{ item.Count }}</td>
+                </tr>
+                {% endfor %}
+              {% endfor %}
+              {% for row in summary_rows %}
+                <tr class="font-weight-bold">
+                  <td>{{ row.Creator }} Total</td>
+                  <td></td>
+                  <td class="text-right">{{ row.TotalGB|floatformat:2 }}</td>
+                  <td class="text-right">{{ row.TotalCount }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="font-weight-bold">
+                <td>Grand Total</td>
+                <td></td>
+                <td class="text-right">{{ summary_grand_total|floatformat:2 }}</td>
+                <td class="text-right">{{ summary_grand_count }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="mt-3">
+          <form method="post">{% csrf_token %}
+            <input type="hidden" name="creators_raw" value="{{ form.creators_raw.value|default_if_none:'' }}">
+            <input type="hidden" name="filter_serial" value="{{ form.filter_serial.value|default_if_none:'' }}">
+            <input type="hidden" name="serial_op" value="{{ form.serial_op.value|default_if_none:'' }}">
+            <input type="hidden" name="serial_value" value="{{ form.serial_value.value|default_if_none:'' }}">
+            <input type="hidden" name="serial_min" value="{{ form.serial_min.value|default_if_none:'' }}">
+            <input type="hidden" name="serial_max" value="{{ form.serial_max.value|default_if_none:'' }}">
+            <input type="hidden" name="filter_date" value="{{ form.filter_date.value|default_if_none:'' }}">
+            <input type="hidden" name="date_op" value="{{ form.date_op.value|default_if_none:'' }}">
+            <input type="hidden" name="date_value" value="{{ form.date_value.value|default_if_none:'' }}">
+            <input type="hidden" name="date_start" value="{{ form.date_start.value|default_if_none:'' }}">
+            <input type="hidden" name="date_end" value="{{ form.date_end.value|default_if_none:'' }}">
+            <button class="btn btn-outline-secondary" name="action" value="download_summary_pdf">Download Summary PDF</button>
+          </form>
+        </div>
+      {% else %}
+        <p>داده‌ای برای خلاصه یافت نشد.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<style>
+  .summary-table { max-width: 900px; margin: 0 auto; }
+  .summary-table table { margin: 0 auto; }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const dateOp = document.getElementById('id_date_op');
+    const dateStart = document.getElementById('id_date_start');
+    const dateEnd = document.getElementById('id_date_end');
+    const sibOp = document.getElementById('id_sib_serial_op');
+    const sibMinGroup = document.getElementById('id_sib_serial_min')?.closest('.form-group');
+    const sibMaxGroup = document.getElementById('id_sib_serial_max')?.closest('.form-group');
+
+    if (!dateOp) return;
+
+    const clearDatesIfNone = () => {
+      if (dateOp.value === 'NONE') {
+        if (dateStart) dateStart.value = '';
+        if (dateEnd) dateEnd.value = '';
+      }
+    };
+
+    const toggleSibRange = () => {
+      if (!sibOp || !sibMinGroup || !sibMaxGroup) return;
+      const show = sibOp.value === 'BETWEEN';
+      sibMinGroup.style.display = show ? '' : 'none';
+      sibMaxGroup.style.display = show ? '' : 'none';
+      if (!show) {
+        const minInput = sibMinGroup.querySelector('input');
+        const maxInput = sibMaxGroup.querySelector('input');
+        if (minInput) minInput.value = '';
+        if (maxInput) maxInput.value = '';
+      }
+    };
+
+    dateOp.addEventListener('change', clearDatesIfNone);
+    if (sibOp) sibOp.addEventListener('change', toggleSibRange);
+    clearDatesIfNone();
+    toggleSibRange();
+  });
+</script>
+
+{% endblock %}
