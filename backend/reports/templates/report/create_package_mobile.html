@@ -1,0 +1,242 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="mobile">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ساخت پکیج | موبایل</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'report/styles/mobile.css' %}">
+</head>
+<body>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">منو</div>
+            <button id="menu-toggle" class="icon-btn" type="button" aria-label="Close menu">
+                <span class="material-icons-outlined">close</span>
+            </button>
+        </div>
+        <nav class="nav-container">
+            <a href="{% url 'reports:report' %}" class="nav-link">
+                <span class="material-icons-outlined">assignment</span>
+                <span>پنل گزارشات</span>
+            </a>
+            <a href="{% url 'reports:create_package' %}" class="nav-link nav-link-create active">
+                <span class="material-icons-outlined">add_box</span>
+                <span>ساخت پکیج</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="nav-link">
+                <span class="material-icons-outlined" style="color:var(--muted)">logout</span>
+                <span>خروج</span>
+            </a>
+            {% endif %}
+            <a href="#" class="nav-link">
+                <span class="material-icons-outlined" style="color:var(--muted)">settings</span>
+                <span>تنظیمات</span>
+            </a>
+        </div>
+    </aside>
+
+    <header class="topbar">
+        <button id="mobile-toggle" class="icon-btn" type="button" aria-label="Open menu">
+            <span class="material-icons-outlined">menu</span>
+        </button>
+        <div>
+            <div class="topbar-title">ساخت پکیج</div>
+            <div class="topbar-subtitle">ایجاد کاربران جدید و دانلود خروجی</div>
+        </div>
+    </header>
+
+    <main class="page">
+        {% if error %}
+        <div class="card card-alert">
+            <div class="card-title">خطا</div>
+            <div>{{ error }}</div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-title">همگام سازی</div>
+            <form method="post" action="{% url 'reports:create_package_manual_sync' %}" class="actions-row">
+                {% csrf_token %}
+                <button class="btn-base" type="submit" name="action" value="sync_all">
+                    <span>همگام سازی تمام سرور ها</span>
+                </button>
+            </form>
+        </div>
+
+        <form method="post" class="card">
+            {% csrf_token %}
+            <div class="card-title">اطلاعات ریسلر</div>
+            <div class="form-row">
+                <div class="field">
+                    <div class="label">{{ form.server_name.label }}</div>
+                    <div class="input-box">
+                        {{ form.server_name }}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="label">{{ form.reseller_username.label }}</div>
+                    <div class="input-box">
+                        {{ form.reseller_username }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions-row">
+                <button class="btn-base" type="submit" name="action" value="check_reseller" formnovalidate>
+                    <span>بررسی ریسلر</span>
+                </button>
+            </div>
+
+            {% if reseller_valid %}
+            <div class="card-title">تنظیمات ساخت</div>
+            <div class="form-row">
+                <div class="field">
+                    <div class="label">{{ form.user_count.label }}</div>
+                    <div class="input-box">
+                        {{ form.user_count }}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="label">{{ form.username_prefix.label }}</div>
+                    <div class="input-box">
+                        {{ form.username_prefix }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field">
+                    <div class="label">{{ form.visp_id.label }}</div>
+                    <div class="input-box">
+                        {{ form.visp_id }}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="label">{{ form.center_id.label }}</div>
+                    <div class="input-box">
+                        {{ form.center_id }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="field">
+                    <div class="label">{{ form.service_id.label }}</div>
+                    <div class="input-box">
+                        {{ form.service_id }}
+                    </div>
+                </div>
+            </div>
+
+            {{ form.supporter_id }}
+            {{ form.status_id }}
+
+            <div class="actions-row">
+                <button class="btn-base btn-primary" type="submit" name="action" value="create">
+                    <span>ساخت یوزر</span>
+                </button>
+            </div>
+            {% endif %}
+        </form>
+
+        <div class="card">
+            <div class="card-title">دانلود آخرین ساخته شده ها</div>
+            <form method="get" action="{% url 'reports:create_package_download_archive' %}" class="form-row">
+                <div class="field">
+                    <div class="label">کد سری ساخت یوزر</div>
+                    <div class="input-box">
+                        <input type="text" name="pdf_id" id="pdf-id-input" placeholder="کد سری ساخت یوزر را وارد کنید">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="label">یا انتخاب آخرین PDF</div>
+                    <div class="input-box">
+                        <select id="pdf-id-select" aria-label="آخرین PDF ها">
+                            <option value="">انتخاب آخرین PDF</option>
+                            {% for pdf in pdf_archives %}
+                            <option value="{{ pdf.id }}">{{ pdf.id }} - {{ pdf.get_pdf_type_display }} - {{ pdf.created_at|date:"Y-m-d H:i" }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="actions-row">
+                    <button class="btn-base" type="submit">
+                        <span>دانلود</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if info %}
+        <div class="card">
+            <div class="card-title">وضعیت همگام سازی</div>
+            {% if creation_log and selection %}
+            <div class="text-success">
+                Created {{ selection.user_count }} user(s) of reseller {{ selection.reseller_username }} on center {{ selection.center }}
+                on VISP {{ selection.visp }} with package {{ selection.service }}.
+            </div>
+            {% if created_pdf_ids.qr %}
+            <div class="text-danger">QR PDF ID: {{ created_pdf_ids.qr }}</div>
+            {% endif %}
+            {% else %}
+            <div class="text-success">{{ info }}</div>
+            {% endif %}
+
+            {% if creation_log %}
+            <a class="btn-base" href="{% url 'reports:create_package_download_qr_pdf' %}">دانلود QR PDF</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const menuToggle = document.getElementById('menu-toggle');
+            const mobileToggle = document.getElementById('mobile-toggle');
+
+            function toggleSidebar() {
+                const isOpen = sidebar.classList.contains('is-open');
+                if (isOpen) {
+                    sidebar.classList.remove('is-open');
+                    overlay.classList.remove('is-visible');
+                } else {
+                    sidebar.classList.add('is-open');
+                    overlay.classList.add('is-visible');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('is-open');
+                overlay.classList.remove('is-visible');
+            }
+
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            if (mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+
+            var select = document.getElementById('pdf-id-select');
+            var input = document.getElementById('pdf-id-input');
+            if (select && input) {
+                select.addEventListener('change', function () {
+                    if (select.value) {
+                        input.value = select.value;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

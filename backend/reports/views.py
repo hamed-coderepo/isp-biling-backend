@@ -9,6 +9,7 @@ from django.conf import settings
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
+from django.contrib.auth import views as auth_views
 from django.http import HttpResponse, HttpResponseForbidden, FileResponse
 from django.core.management import call_command
 from django.core.files.base import ContentFile
@@ -40,6 +41,18 @@ def safe_text(text):
         return str(text).encode('latin-1', 'ignore').decode('latin-1')
     except Exception:
         return ''
+
+
+_MOBILE_UA_RE = re.compile(r"android|iphone|ipad|ipod|mobile|iemobile|blackberry|opera mini", re.I)
+
+
+def _is_mobile_request(request):
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    return bool(_MOBILE_UA_RE.search(user_agent))
+
+
+def _select_template(request, desktop_template, mobile_template):
+    return mobile_template if _is_mobile_request(request) else desktop_template
 
 
 def _truncate_text(pdf, text, width):
@@ -409,6 +422,7 @@ def export_detail_tables_to_pdf(limited_df, unlimited_df):
 
 @login_required
 def create_package_view(request):
+    template_name = _select_template(request, 'report/create_package.html', 'report/create_package_mobile.html')
     error = None
     info = None
     selection = None
@@ -598,7 +612,7 @@ def create_package_view(request):
     if request.user.is_authenticated:
         pdf_archives = PdfArchive.objects.filter(created_by=request.user).order_by('-created_at')[:10]
 
-    return render(request, 'report/create_package.html', {
+    return render(request, template_name, {
         'form': form,
         'error': error,
         'info': info,
@@ -710,6 +724,7 @@ def manual_sync_permissions(request):
 
 @login_required
 def report_view(request):
+    template_name = _select_template(request, 'report/report.html', 'report/report_mobile.html')
     if request.method == 'GET':
         request.session.pop('report_filters', None)
     form = FilterForm(request.POST or None)
@@ -747,7 +762,7 @@ def report_view(request):
 
         if not creators:
             request.session['error'] = 'No reseller selected or assigned. Enter a creator name or ask admin to assign your reseller profile.'
-            return render(request, 'report/report.html', {
+            return render(request, template_name, {
                 'form': form,
                 'df': None,
                 'info_tables': info_tables,
@@ -1391,7 +1406,7 @@ LIMIT %s
     columns = list(final_df.columns) if not final_df.empty else None
     rows = final_df.values.tolist() if not final_df.empty else None
 
-    return render(request, 'report/report.html', {
+    return render(request, template_name, {
         'form': form,
         'columns': columns,
         'rows': rows,
@@ -1458,7 +1473,8 @@ def sync_logs_view(request):
             last_auto_entry = entry
             break
 
-    return render(request, 'report/sync_logs.html', {
+    template_name = _select_template(request, 'report/sync_logs.html', 'report/sync_logs_mobile.html')
+    return render(request, template_name, {
         'logs': logs,
         'run_result': run_result,
         'run_error': run_error,
@@ -1472,3 +1488,8 @@ def sync_logs_view(request):
         'auto_count': auto_count,
         'last_auto_entry': last_auto_entry,
     })
+
+
+def login_view(request):
+    template_name = _select_template(request, 'registration/login.html', 'registration/login_mobile.html')
+    return auth_views.LoginView.as_view(template_name=template_name)(request)

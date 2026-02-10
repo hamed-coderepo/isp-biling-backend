@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="mobile">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Logs | Mobile</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'report/styles/mobile.css' %}">
+</head>
+<body>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Menu</div>
+            <button id="menu-toggle" class="icon-btn" type="button" aria-label="Close menu">
+                <span class="material-icons-outlined">close</span>
+            </button>
+        </div>
+        <nav class="nav-container">
+            <a href="{% url 'reports:report' %}" class="nav-link">
+                <span class="material-icons-outlined">assignment</span>
+                <span>Reports</span>
+            </a>
+            <a href="{% url 'reports:create_package' %}" class="nav-link nav-link-create">
+                <span class="material-icons-outlined">add_box</span>
+                <span>Create Package</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="nav-link">
+                <span class="material-icons-outlined" style="color:var(--muted)">logout</span>
+                <span>Logout</span>
+            </a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <header class="topbar">
+        <button id="mobile-toggle" class="icon-btn" type="button" aria-label="Open menu">
+            <span class="material-icons-outlined">menu</span>
+        </button>
+        <div>
+            <div class="topbar-title">Sync Logs</div>
+            <div class="topbar-subtitle">Superuser-only sync history</div>
+        </div>
+    </header>
+
+    <main class="page">
+        <form method="post" class="card">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="run_sync">
+            <div class="form-row">
+                <div class="field">
+                    <label class="label" for="limit">Row limit (0 = no limit)</label>
+                    <input type="number" class="input-main" id="limit" name="limit" value="{{ limit_value }}" min="0">
+                </div>
+                <div class="field">
+                    <label class="label" for="days">Days (0 = all)</label>
+                    <input type="number" class="input-main" id="days" name="days" value="{{ days_value }}" min="0">
+                </div>
+                <div class="field">
+                    <label class="label" for="write_disposition">Write disposition</label>
+                    <div class="input-box">
+                        <select id="write_disposition" name="write_disposition">
+                            <option value="WRITE_TRUNCATE" {% if write_disposition == 'WRITE_TRUNCATE' %}selected{% endif %}>WRITE_TRUNCATE</option>
+                            <option value="WRITE_APPEND" {% if write_disposition == 'WRITE_APPEND' %}selected{% endif %}>WRITE_APPEND</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="actions-row">
+                <button type="submit" class="btn-base btn-primary">Run Sync</button>
+            </div>
+            {% if run_result is not None %}
+            <div class="text-success">Synced {{ run_result }} rows.</div>
+            {% endif %}
+            {% if run_error %}
+            <div class="text-danger">Sync failed: {{ run_error }}</div>
+            {% endif %}
+        </form>
+
+        <div class="card">
+            <div class="card-title">Status</div>
+            <div class="form-row">
+                <div class="field">
+                    <div class="label">Auto sync status</div>
+                    <div>{{ auto_enabled|yesno:"Enabled,Disabled" }}</div>
+                </div>
+                <div class="field">
+                    <div class="label">Auto sync counter</div>
+                    <div>{{ auto_count }}</div>
+                </div>
+                <div class="field">
+                    <div class="label">Interval / Days</div>
+                    <div>{{ auto_interval }} min / {{ auto_days }} days</div>
+                </div>
+                <div class="field">
+                    <div class="label">Next run (UTC)</div>
+                    <div>{{ next_run_at }}</div>
+                </div>
+                <div class="field">
+                    <div class="label">Last auto sync (UTC)</div>
+                    <div>{% if last_auto_entry %}{{ last_auto_entry.ts }}{% else %}-{% endif %}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Logs</div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp (UTC)</th>
+                            <th>Type</th>
+                            <th>Message</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in logs %}
+                        <tr>
+                            <td>{{ entry.ts|default:"-" }}</td>
+                            <td>{{ entry.type|default:"log" }}</td>
+                            <td>{{ entry.message|default:"" }}</td>
+                            <td>{{ entry.data|default:"" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-muted">No logs yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const menuToggle = document.getElementById('menu-toggle');
+            const mobileToggle = document.getElementById('mobile-toggle');
+
+            function toggleSidebar() {
+                const isOpen = sidebar.classList.contains('is-open');
+                if (isOpen) {
+                    sidebar.classList.remove('is-open');
+                    overlay.classList.remove('is-visible');
+                } else {
+                    sidebar.classList.add('is-open');
+                    overlay.classList.add('is-visible');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('is-open');
+                overlay.classList.remove('is-visible');
+            }
+
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            if (mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+        });
+    </script>
+</body>
+</html>

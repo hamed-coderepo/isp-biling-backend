@@ -76,6 +76,58 @@
             }
         }
 
+        @media (max-width: 768px) {
+            .page-content {
+                padding: 12px;
+            }
+
+            .container {
+                gap: 20px;
+            }
+
+            .row {
+                gap: 10px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .form-row {
+                gap: 12px;
+            }
+
+            .form-group {
+                flex: 1 1 100%;
+                min-width: 0;
+            }
+
+            .input-box {
+                height: 56px;
+                padding: 0 12px;
+            }
+
+            .input-box input,
+            .input-box select {
+                font-size: 16px;
+            }
+
+            .input-box select {
+                padding-left: 30px;
+            }
+
+            .field-label,
+            .section-title,
+            .helper-text {
+                font-size: 14px;
+            }
+
+            .btn-action {
+                width: 100%;
+                height: 44px;
+            }
+        }
+
         .card {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -349,6 +401,11 @@
         </aside>
 
         <div class="page-content">
+            <div class="mobile-topbar">
+                <button id="mobile-toggle" class="btn-menu-toggle mobile-menu-btn" type="button" aria-label="Open menu">
+                    <span class="material-icons-outlined">menu</span>
+                </button>
+            </div>
             <div class="container">
                 <div class="row">
                     <div class="card card-full">

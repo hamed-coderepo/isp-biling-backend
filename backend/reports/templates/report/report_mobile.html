@@ -1,0 +1,431 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="mobile">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل گزارشات فارس‌روت | موبایل</title>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'report/styles/mobile.css' %}">
+</head>
+<body>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">منو</div>
+            <button id="menu-toggle" class="icon-btn" type="button" aria-label="Close menu">
+                <span class="material-icons-outlined">close</span>
+            </button>
+        </div>
+        <nav class="nav-container">
+            <a href="{% url 'reports:report' %}" class="nav-link active">
+                <span class="material-icons-outlined">assignment</span>
+                <span>پنل گزارشات</span>
+            </a>
+            <a href="{% url 'reports:create_package' %}" class="nav-link nav-link-create">
+                <span class="material-icons-outlined">add_box</span>
+                <span>ساخت پکیج</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="nav-link">
+                <span class="material-icons-outlined" style="color:var(--muted)">logout</span>
+                <span>خروج</span>
+            </a>
+            {% endif %}
+            <a href="#" class="nav-link">
+                <span class="material-icons-outlined" style="color:var(--muted)">settings</span>
+                <span>تنظیمات</span>
+            </a>
+        </div>
+    </aside>
+
+    <header class="topbar">
+        <button id="mobile-toggle" class="icon-btn" type="button" aria-label="Open menu">
+            <span class="material-icons-outlined">menu</span>
+        </button>
+        <div>
+            <div class="topbar-title">پنل گزارشات فارس‌روت</div>
+            <div class="topbar-subtitle">به سادگی یک کلیک از گزارش کامل فروشات خود آگاه شوید</div>
+        </div>
+    </header>
+
+    <main class="page">
+        {% if error %}
+        <div class="card card-alert">
+            <div class="card-title">خطا</div>
+            <div>{{ error }}</div>
+        </div>
+        {% endif %}
+
+        <form method="post" class="card filter-card">
+            {% csrf_token %}
+            <div class="field">
+                <label class="label">نام ریسلرها</label>
+                <textarea class="input-main" name="creators_raw" rows="2" placeholder="مثال: Ahmad Mahmood, Ghafoor Hamidi">{{ form.creators_raw.value|default_if_none:'' }}</textarea>
+            </div>
+
+            <div class="filter-grid">
+                <div class="filter-item-box js-filter-container">
+                    <label class="label">شماره بیگ کیوری</label>
+                    <div class="filter-row">
+                        <div class="select-ui js-custom-select" data-input-id="id_serial_op">
+                            <span class="selected-value">شرط</span>
+                            <span class="material-icons-outlined" style="font-size: 14px;">expand_more</span>
+                            <div class="filter-dropdown-menu">
+                                <div class="filter-option" data-value="NONE">بدون شرط</div>
+                                <div class="filter-option" data-value="=">مساوی</div>
+                                <div class="filter-option" data-value="<">کوچکتر</div>
+                                <div class="filter-option" data-value=">">بزرگتر</div>
+                                <div class="filter-option" data-value=">=">بزرگتر مساوی</div>
+                                <div class="filter-option" data-value="<=">کوچکتر مساوی</div>
+                                <div class="filter-option" data-value="BETWEEN">بازه عددی</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="id_serial_op" name="serial_op" value="{{ form.serial_op.value|default_if_none:'NONE' }}">
+                        <div class="input-container-flex js-input-single">
+                            <input type="number" class="dynamic-input" name="serial_value" value="{{ form.serial_value.value|default_if_none:'' }}" placeholder="مقدار...">
+                        </div>
+                        <div class="input-container-flex is-hidden js-input-range">
+                            <div class="range-container">
+                                <input type="number" class="dynamic-input" name="serial_min" value="{{ form.serial_min.value|default_if_none:'' }}" placeholder="از">
+                                <input type="number" class="dynamic-input" name="serial_max" value="{{ form.serial_max.value|default_if_none:'' }}" placeholder="تا">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-item-box js-filter-container">
+                    <label class="label">شماره سیب</label>
+                    <div class="filter-row">
+                        <div class="select-ui js-custom-select" data-input-id="id_sib_serial_op">
+                            <span class="selected-value">شرط</span>
+                            <span class="material-icons-outlined" style="font-size: 14px;">expand_more</span>
+                            <div class="filter-dropdown-menu">
+                                <div class="filter-option" data-value="NONE">بدون شرط</div>
+                                <div class="filter-option" data-value="=">مساوی</div>
+                                <div class="filter-option" data-value="<">کوچکتر</div>
+                                <div class="filter-option" data-value=">">بزرگتر</div>
+                                <div class="filter-option" data-value=">=">بزرگتر مساوی</div>
+                                <div class="filter-option" data-value="<=">کوچکتر مساوی</div>
+                                <div class="filter-option" data-value="BETWEEN">بازه عددی</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="id_sib_serial_op" name="sib_serial_op" value="{{ form.sib_serial_op.value|default_if_none:'NONE' }}">
+                        <div class="input-container-flex js-input-single">
+                            <input type="number" class="dynamic-input" name="sib_serial_value" value="{{ form.sib_serial_value.value|default_if_none:'' }}" placeholder="مقدار...">
+                        </div>
+                        <div class="input-container-flex is-hidden js-input-range">
+                            <div class="range-container">
+                                <input type="number" class="dynamic-input" name="sib_serial_min" value="{{ form.sib_serial_min.value|default_if_none:'' }}" placeholder="از">
+                                <input type="number" class="dynamic-input" name="sib_serial_max" value="{{ form.sib_serial_max.value|default_if_none:'' }}" placeholder="تا">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-item-box js-filter-container">
+                    <label class="label">تاریخ ثبت</label>
+                    <div class="filter-row">
+                        <div class="select-ui js-custom-select" data-input-id="id_date_op">
+                            <span class="selected-value">شرط</span>
+                            <span class="material-icons-outlined" style="font-size: 14px;">expand_more</span>
+                            <div class="filter-dropdown-menu">
+                                <div class="filter-option" data-value="NONE">بدون شرط</div>
+                                <div class="filter-option" data-value="=">مساوی</div>
+                                <div class="filter-option" data-value="<">قبل از</div>
+                                <div class="filter-option" data-value=">">بعد از</div>
+                                <div class="filter-option" data-value=">=">بزرگتر مساوی</div>
+                                <div class="filter-option" data-value="<=">کوچکتر مساوی</div>
+                                <div class="filter-option" data-value="BETWEEN">بازه تاریخ</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="id_date_op" name="date_op" value="{{ form.date_op.value|default_if_none:'NONE' }}">
+                        <div class="input-container-flex js-input-single">
+                            <input type="date" class="dynamic-input" name="date_value" value="{{ form.date_value.value|default_if_none:'' }}">
+                        </div>
+                        <div class="input-container-flex is-hidden js-input-range">
+                            <div class="range-container">
+                                <input type="date" class="dynamic-input" name="date_start" value="{{ form.date_start.value|default_if_none:'' }}">
+                                <input type="date" class="dynamic-input" name="date_end" value="{{ form.date_end.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-item-box js-filter-container">
+                    <label class="label">وضعیت سرویس</label>
+                    <div class="filter-row">
+                        <div class="select-ui js-custom-select" data-input-id="id_service_status">
+                            <span class="selected-value">بدون شرط</span>
+                            <span class="material-icons-outlined" style="font-size: 14px;">expand_more</span>
+                            <div class="filter-dropdown-menu">
+                                <div class="filter-option" data-value="NONE">بدون شرط</div>
+                                <div class="filter-option" data-value="Used">Used</div>
+                                <div class="filter-option" data-value="Cancel">Cancel</div>
+                                <div class="filter-option" data-value="Pending">Pending</div>
+                                <div class="filter-option" data-value="Active">Active</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="id_service_status" name="service_status" value="{{ form.service_status.value|default_if_none:'NONE' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions-bar">
+                <button type="reset" id="reset-filters" class="btn-base">
+                    <span>حذف فیلترها</span>
+                </button>
+
+                <button type="submit" name="action" value="show_summary" class="btn-base btn-primary">
+                    <span>نمایش خلاصه</span>
+                </button>
+
+                <div class="dropdown-wrapper">
+                    <button id="download-dropdown-btn" type="button" class="btn-base">
+                        <span>دانلود گزارش</span>
+                        <span class="material-icons-outlined" style="font-size:14px">expand_more</span>
+                    </button>
+                    <div id="download-dropdown-menu" class="dropdown-menu">
+                        <button type="submit" class="dropdown-btn-item" name="action" value="download_csv">دانلود فایل اکسل</button>
+                        <button type="submit" class="dropdown-btn-item" name="action" value="download_report">دانلود PDF کامل</button>
+                        <button type="submit" class="dropdown-btn-item" name="action" value="download_summary_pdf">دانلود خلاصه PDF</button>
+                        <button type="submit" class="dropdown-btn-item" name="action" value="download_unlimited_pdf">دانلود گزارش بسته های نامحدود PDF</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <section class="card">
+            <div class="card-title">گزاش خلاصه حجم مصرفی</div>
+            <div class="table-wrap">
+                <table class="data-table" dir="ltr">
+                    <thead>
+                        <tr>
+                            <th>Creator</th>
+                            <th>ServiceName</th>
+                            <th>SUM (GB)</th>
+                            <th>COUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in summary_rows %}
+                            {% for item in row.Details %}
+                            <tr>
+                                <td>{{ row.Creator }}</td>
+                                <td>{{ item.ServiceName }}</td>
+                                <td>{{ item.SumGB|floatformat:2 }}</td>
+                                <td>{{ item.Count }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for row in summary_rows %}
+                        <tr>
+                            <td>{{ row.Creator }} Total</td>
+                            <td></td>
+                            <td>{{ row.TotalGB|floatformat:2 }}</td>
+                            <td>{{ row.TotalCount }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>Grand Total</td>
+                            <td></td>
+                            <td>{{ summary_grand_total|floatformat:2 }}</td>
+                            <td>{{ summary_grand_count }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-title">گزارش خلاصه بسته های نا محدود</div>
+            <div class="table-wrap">
+                <table class="data-table" dir="ltr">
+                    <thead>
+                        <tr>
+                            <th>Creator</th>
+                            <th>ServiceName</th>
+                            <th>SUM (GB)</th>
+                            <th>COUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in unlimited_summary_rows %}
+                            {% for item in row.Details %}
+                            <tr>
+                                <td>{{ row.Creator }}</td>
+                                <td>{{ item.ServiceName }}</td>
+                                <td>{{ item.SumGB|floatformat:2 }}</td>
+                                <td>{{ item.Count }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for row in unlimited_summary_rows %}
+                        <tr>
+                            <td>{{ row.Creator }} Total</td>
+                            <td></td>
+                            <td>{{ row.TotalGB|floatformat:2 }}</td>
+                            <td>{{ row.TotalCount }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>Grand Total</td>
+                            <td></td>
+                            <td>{{ unlimited_grand_total|floatformat:2 }}</td>
+                            <td>{{ unlimited_grand_count }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const menuToggle = document.getElementById('menu-toggle');
+            const mobileToggle = document.getElementById('mobile-toggle');
+
+            function toggleSidebar() {
+                const isOpen = sidebar.classList.contains('is-open');
+                if (isOpen) {
+                    sidebar.classList.remove('is-open');
+                    overlay.classList.remove('is-visible');
+                } else {
+                    sidebar.classList.add('is-open');
+                    overlay.classList.add('is-visible');
+                }
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('is-open');
+                overlay.classList.remove('is-visible');
+            }
+
+            if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+            if (mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+
+            const customSelects = document.querySelectorAll('.js-custom-select');
+            customSelects.forEach(select => {
+                const inputId = select.getAttribute('data-input-id');
+                const hiddenInput = inputId ? document.getElementById(inputId) : null;
+                const container = select.closest('.js-filter-container');
+                const single = container ? container.querySelector('.js-input-single') : null;
+                const range = container ? container.querySelector('.js-input-range') : null;
+
+                const applyValue = (value, text) => {
+                    if (hiddenInput) hiddenInput.value = value;
+                    select.querySelector('.selected-value').innerText = text || 'شرط';
+                    if (single && range) {
+                        single.classList.remove('is-hidden');
+                        range.classList.add('is-hidden');
+                        if (value === 'BETWEEN') {
+                            single.classList.add('is-hidden');
+                            range.classList.remove('is-hidden');
+                        }
+                    }
+                };
+
+                const normalizeValue = (value) => (value === 'EXACT' ? '=' : value);
+                const initialValueRaw = hiddenInput && hiddenInput.value ? hiddenInput.value : 'NONE';
+                const initialValue = normalizeValue(initialValueRaw);
+                if (hiddenInput && hiddenInput.value !== initialValue) {
+                    hiddenInput.value = initialValue;
+                }
+                const initialOption = select.querySelector(`.filter-option[data-value="${initialValue}"]`);
+                applyValue(initialValue, initialOption ? initialOption.innerText : 'شرط');
+
+                select.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    customSelects.forEach(s => {
+                        if (s !== select) s.querySelector('.filter-dropdown-menu').classList.remove('show');
+                    });
+                    select.querySelector('.filter-dropdown-menu').classList.toggle('show');
+                });
+
+                const options = select.querySelectorAll('.filter-option');
+                options.forEach(opt => {
+                    opt.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const value = opt.getAttribute('data-value');
+                        const text = opt.innerText;
+                        select.querySelector('.filter-dropdown-menu').classList.remove('show');
+                        applyValue(value, text);
+                    });
+                });
+            });
+
+            const downloadBtn = document.getElementById('download-dropdown-btn');
+            const downloadMenu = document.getElementById('download-dropdown-menu');
+
+            if (downloadBtn && downloadMenu) {
+                downloadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    downloadMenu.classList.toggle('is-show');
+                });
+            }
+
+            window.addEventListener('click', () => {
+                if (downloadMenu) downloadMenu.classList.remove('is-show');
+                document.querySelectorAll('.filter-dropdown-menu').forEach(m => m.classList.remove('show'));
+            });
+
+            const form = document.querySelector('form.filter-card');
+            const resetBtn = document.getElementById('reset-filters');
+
+            const resetCustomSelects = () => {
+                customSelects.forEach(select => {
+                    const inputId = select.getAttribute('data-input-id');
+                    const hiddenInput = inputId ? document.getElementById(inputId) : null;
+                    const defaultValue = 'NONE';
+                    const defaultOption = select.querySelector(`.filter-option[data-value="${defaultValue}"]`);
+                    if (hiddenInput) hiddenInput.value = defaultValue;
+                    select.querySelector('.selected-value').innerText = defaultOption ? defaultOption.innerText : 'شرط';
+
+                    const container = select.closest('.js-filter-container');
+                    const single = container ? container.querySelector('.js-input-single') : null;
+                    const range = container ? container.querySelector('.js-input-range') : null;
+                    if (single && range) {
+                        single.classList.remove('is-hidden');
+                        range.classList.add('is-hidden');
+                    }
+                });
+            };
+
+            const clearInputs = () => {
+                if (!form) return;
+                form.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]').forEach(input => {
+                    input.value = '';
+                });
+            };
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (form) form.reset();
+                    resetCustomSelects();
+                    clearInputs();
+                    window.location = window.location.pathname + '?reset=1';
+                });
+            }
+
+            const navEntry = performance.getEntriesByType('navigation')[0];
+            if (navEntry && navEntry.type === 'reload') {
+                if (form) form.reset();
+                resetCustomSelects();
+                clearInputs();
+            }
+        });
+    </script>
+</body>
+</html>
